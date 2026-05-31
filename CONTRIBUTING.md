@@ -71,93 +71,115 @@ feat: 新增 jd 脚本(京东每日签到)
 
 ## 📄 脚本 README 模板
 
-直接复制下面这段,把所有 `<脚本名>` / `<功能>` / `<域名>` / `<重写正则>` 替换成实际值即可。
+直接复制下面这段,把所有 `<...>` 占位符替换成实际值。
+**章节顺序固定**:图标预览 → 标题 → 简介 → 文件 → 使用步骤 → Loon → Surge → Quantumult X → Stash → 实现细节 → 维护记录 → 已知限制 →(致谢,仅改造他人脚本时保留)。
 
-```markdown
-# 📎 <脚本名> · <功能短描述>
+````markdown
+<p align="center">
+  <img src="<pin 图标 URL>" width="80" alt="<显示名>" />
+</p>
 
-<一句话功能介绍>
+# <显示名>
 
----
+<一句话功能介绍:签到/领券,送什么>。
 
-## 📍 Raw URL
+## 文件
 
-\`\`\`
-https://raw.githubusercontent.com/MaYIHEI/paperclip/main/<分类>/<脚本名>/<脚本名>.js
-\`\`\`
+- `<脚本名>.js` — <脚本主体说明;单脚本架构则注明"既是重写抓 cookie 也是 cron 签到,根据 `$request` 是否存在区分">
+- `<脚本名>.cookie.js` — <如有独立 cookie 抓取脚本则保留此行,否则删掉>
 
----
+## 使用步骤
 
-## ⚙️ 重写规则
+1. 按下方对应平台配置,开启重写脚本 + cron
+2. 打开 <小程序名 / APP 名> → 进入 <触发页面>,触发 <触发接口>
+3. 收到 `✅ <显示名> Cookie 获取成功` 通知即抓取成功
+4. cron 会按计划自动签到
 
-### Surge / Loon
+## Loon
 
-\`\`\`ini
-[Script]
-http-response <重写正则> script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/main/<分类>/<脚本名>/<脚本名>.js, requires-body=true, timeout=60, tag=<显示名> Cookie
-
+```ini
 [MITM]
 hostname = <域名>
-\`\`\`
 
-### Quantumult X
-
-\`\`\`ini
-[rewrite_local]
-<重写正则> url script-response-body https://raw.githubusercontent.com/MaYIHEI/paperclip/main/<分类>/<脚本名>/<脚本名>.js
-
-[mitm]
-hostname = <域名>
-\`\`\`
-
----
-
-## 🚀 使用步骤
-
-1. 在代理工具中配置上述重写规则与 MITM 主机名
-2. 打开微信小程序 **<小程序名>**
-3. 进入<触发页面>,触发<触发接口>
-4. 通知栏出现 "🎉账号[xxx]更新token成功!" 即抓取成功
-5. 配置定时任务每日执行
-
----
-
-## ⏰ Cron 配置
-
-### Surge / Loon / Stash
-
-\`\`\`ini
 [Script]
-cron "0 9 * * *" script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/main/<分类>/<脚本名>/<脚本名>.js, tag=<显示名>签到
-\`\`\`
+http-request <重写正则> tag=<显示名> Cookie, script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/<分类>/<脚本名>/<脚本名>.js, requires-body=false, img-url=<pin 图标 URL>
 
-### Quantumult X
+cron "0 9 * * *" script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/<分类>/<脚本名>/<脚本名>.js, tag=<显示名>签到, img-url=<pin 图标 URL>, enable=true
+```
 
-\`\`\`ini
+## Surge
+
+```ini
+[MITM]
+hostname = <域名>
+
+[Script]
+<显示名> Cookie = type=http-request,pattern=<重写正则>,requires-body=false,max-size=0,script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/<分类>/<脚本名>/<脚本名>.js,img-url=<pin 图标 URL>
+
+<显示名>签到 = type=cron,cronexp=0 9 * * *,timeout=60,script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/<分类>/<脚本名>/<脚本名>.js,img-url=<pin 图标 URL>
+```
+
+## Quantumult X
+
+```ini
+[MITM]
+hostname = <域名>
+
+[rewrite_local]
+<重写正则> url script-request-header https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/<分类>/<脚本名>/<脚本名>.js
+
 [task_local]
-0 9 * * * https://raw.githubusercontent.com/MaYIHEI/paperclip/main/<分类>/<脚本名>/<脚本名>.js, tag=<显示名>签到, enabled=true
-\`\`\`
+0 9 * * * https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/<分类>/<脚本名>/<脚本名>.js, tag=<显示名>签到, img-url=<pin 图标 URL>, enabled=true
+```
 
----
+## Stash
 
-## 📝 维护记录
+```yaml
+cron:
+  script:
+    - name: <显示名>签到
+      cron: '0 9 * * *'
+      timeout: 60
+
+http:
+  mitm:
+    - "<域名>"
+  script:
+    - match: <重写正则>
+      name: <显示名> Cookie
+      type: request
+      require-body: false
+
+script-providers:
+  <显示名>签到:
+    url: https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/<分类>/<脚本名>/<脚本名>.js
+    interval: 86400
+```
+
+## 实现细节
+
+- <鉴权方式 / 签名算法 / 关键坑,逐条列出>
+
+## 维护记录
 
 | 日期 | 变更 |
 |---|---|
 | YYYY-MM-DD | 初版 / 适配 / 修复 |
 
----
+## 已知限制
 
-## ⚠️ 已知限制
+- <列出已知问题、token 有效期、需手动刷新的场景等>
 
-- 列出已知问题、有效期、需要手动刷新的场景等
+## 致谢
 
----
+- 原作者:[@xxx](链接)
+````
 
-## 🙏 致谢
-
-- 原作者: [@xxx](链接)(如基于他人改造)
-```
+> **图标(img-url / 预览)**:
+> - URL 用 `refs/heads/main/`(不是裸 `main/`),指向 `pin` 仓库:`https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/<分类>/<图标名>.png`
+> - **pin 图标名可能和脚本目录名不一样**(如 `ppmt` → `popmart.png`、`weibotalk` → `weibo.png`),写之前先看 `pin/app/README.md` 清单,别重复造图标
+>
+> **致谢段**:只有基于他人脚本改造、参考别人思路时才写。**自研脚本整段删掉**,不要写"自研"占位——空段比"致谢自己"自然。
 
 ---
 
@@ -168,6 +190,7 @@ cron "0 9 * * *" script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip
 | 徽章 | 含义 |
 |---|---|
 | ✅ 维护中 | 当前可用,定期验证 |
+| 🧪 待验证 | 新增/改造完成,token 时效与稳定性尚未实测 |
 | ⚠️ 待修 | 已知问题,暂未修复 |
 | ❌ 已失效 | 接口下线或风控,无法使用 |
 | 🔜 计划中 | 占位,尚未开发 |
