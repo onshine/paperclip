@@ -11,13 +11,13 @@
 |---|---|---|
 | [`ppmt/`](./ppmt/) | 泡泡玛特 - 每日签到 | ✅ 维护中 |
 | [`tuhu/`](./tuhu/) | 途虎养车 - 每日签到 | ✅ 维护中 |
-| [`bibisheng/`](./bibisheng/) | 微信支付笔笔省 - 提现领券 | ❌ 已失效 |
+| [`bibisheng/`](./bibisheng/) | 微信支付笔笔省 - 提现领券 | 📦 已归档 |
 | [`haidilao/`](./haidilao/) | 海底捞 - 每日签到 | ✅ 维护中 |
 | [`huisheng/`](./huisheng/) | 惠省 - 每日领券 | ✅ 维护中 |
 | [`miniso/`](./miniso/) | 名创优品 - mini 币 | ✅ 维护中 |
 | [`longde/`](./longde/) | 龙德广场 - 每日签到 | ✅ 维护中 |
 | [`lhtj/`](./lhtj/) | 龙湖天街 - 每日签到(仅小程序通道) | ✅ 维护中 |
-| [`casetify/`](./casetify/) | CASETiFY - 每日签到 | ❌ 已失效 |
+| [`casetify/`](./casetify/) | CASETiFY - 每日签到 | 📦 已归档 |
 | [`songshan/`](./songshan/) | 松山棉店 - 每日签到(微盟 SaaS) | 🧪 待验证 |
 | [`wedome/`](./wedome/) | 味多美 - 每日签到(卓健/大咖 SaaS) | 🧪 待验证 |
 | [`topsports/`](./topsports/) | 滔搏运动 - 每日签到 | 🧪 待验证 |

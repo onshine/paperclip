@@ -4,6 +4,8 @@
 
 # 腾讯视频
 
+> 📦 **已归档** · vusession 2h TTL,续期协议私有不可复现,不再维护,仅保留历史
+
 腾讯视频 APP VIP 签到(V力值)。cookie 2h TTL,需用户睡前用 APP 自然续 cookie 配合。
 
 ## 文件
