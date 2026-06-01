@@ -91,12 +91,21 @@ function getCookie() {
 // ============ 业务 ============
 
 function commonHeaders() {
+    // doSign 严格校验完整请求头:缺 version / sec-fetch-* 会报 50010「小程序权限不足」
+    // (actInfo 宽容所以能过)。version 从 cookie 里取,app 升版自动跟,兜底 4.15.1。
+    const version = (/(?:^|; )version=([^;]+)/.exec($.cookie || "") || [])[1] || "4.15.1";
     return {
         accept: "application/json, text/plain, */*",
         "content-type": "application/json",
         brandcode: BRAND,
+        version,
         origin: HOST,
         Referer: `${HOST}/m/dailycenter?brandCode=${BRAND}&share=true&minienv=1`,
+        "accept-language": "zh-CN,zh-Hans;q=0.9",
+        "sec-fetch-site": "same-origin",
+        "sec-fetch-mode": "cors",
+        "sec-fetch-dest": "empty",
+        priority: "u=3, i",
         "User-Agent": UA,
         Cookie: $.cookie,
     };

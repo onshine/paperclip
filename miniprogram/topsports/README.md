@@ -89,9 +89,11 @@ script-providers:
 | 日期 | 变更 |
 |---|---|
 | 2026-05-31 | 初版,Cookie 鉴权,activityId 走 actInfo 动态获取,brandCode=TS |
+| 2026-06-01 | doSign 50010 修复:补 `version` + `sec-fetch-*` 请求头(actInfo 宽容、doSign 严格,缺头即「小程序权限不足」) |
 
 ## 已知限制
 
 - 单脚本架构(`$request` 是否存在区分抓 cookie / cron)
 - `Authorization` 为 UUID 会话票据,过期后 `actInfo` 失败、脚本提示「Cookie 失效」,需重新进小程序「每日中心」页重抓
+- doSign 需 `version` 请求头(从 cookie 的 `version=` 取,兜底 4.15.1)+ 完整 cookie(含 `appletsSource`/`memberId`,靠 normalizeCookie 拆脏前缀);**修后必须重进每日中心页重抓覆盖旧脏 cookie**
 - `brandCode` 固定 `TS`
