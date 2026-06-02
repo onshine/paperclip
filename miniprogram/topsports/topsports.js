@@ -112,6 +112,10 @@ function commonHeaders() {
 }
 
 async function checkin() {
+    // [临时诊断] 定位 doSign 50010:只打 cookie 的 key 名(不打值,脱敏)+ version 取值,
+    // 确认 appletsSource/memberId/version 是否真的在 cookie 里。定位后删除本段。
+    diagCookie();
+
     // 1) 取活动信息(动态 activityId)
     const actInfo = await request("GET", `/h5/act/signIn/actInfo?brandCode=${BRAND}`, null);
     debug(actInfo, "actInfo");
@@ -164,6 +168,15 @@ function request(method, path, body) {
 }
 
 // ============ 工具 ============
+
+// [临时诊断] 列出 cookie 结构,定位 doSign 50010 用,定位后删除
+function diagCookie() {
+    const ck = $.cookie || "";
+    const keys = ck.split(/;\s*/).map((p) => p.split("=")[0].trim()).filter(Boolean);
+    const ver = (/(?:^|;\s*)version=([^;]+)/.exec(ck) || [])[1] || "(无→兜底4.15.1)";
+    $.log(`[DIAG] cookie keys: ${keys.join(", ")}`);
+    $.log(`[DIAG] version=${ver} | appletsSource=${/appletsSource=/i.test(ck)} memberId=${/memberId=/i.test(ck)} Authorization=${/Authorization=/i.test(ck)}`);
+}
 
 function lowerKeys(obj) {
     if (!obj) return {};
