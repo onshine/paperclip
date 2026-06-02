@@ -13,6 +13,9 @@
 
 const $ = new Env("驴充充");
 
+const SCRIPT_VERSION = "2026-06-03.1"; // 改一次 +1,跑日志可见,确认是否拉到最新版(避开 CDN 缓存)
+$.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
+
 const CK_AUTH = "lvcchong_auth"; // refreshToken 等,抓取写入、每次签到自动滚动更新
 
 $.is_debug = ($.isNode() ? process.env.IS_DEBUG : $.getdata("lvcchong_debug")) || "false";
