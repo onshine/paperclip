@@ -1,21 +1,24 @@
 # 驴充充
 
-> ⚠️ **实验性** · 依赖「服务端不认 JWT 短过期、按 jti 记账」这一实测行为,跨天能否续命待长期观察(见下)
+> 🧪 **待验证** · 依赖「服务端不认 JWT 短过期、按 jti 记账」这一实测行为,跨天能否续命待长期观察(见下)
 
 驴充充(充电桩)App「积分中心 → 签到」每日签到领积分。鉴权用 `refreshToken`(存 BoxJS,自动滚动更新),签到接口本身无签名、无验证码。
 
 ## 文件
 
-- `lvcchong.js` — 单脚本架构,既是抓 `refreshToken` 的重写脚本,也是 cron 签到(按 `$request` 是否存在区分)
+- `lvcchong.js` — cron 签到主体
+- `lvcchong.cookie.js` — Cookie 抓取脚本(http-request 重写,抓 `refreshToken` 等入库)
 
 ## 使用步骤
 
 1. 按下方平台配置,开启重写脚本 + cron
-2. Loon 开抓包,打开**驴充充 App**(已登录,**无需退出登录**)
-3. 进入「我的 → 积分中心 / 签到」页(触发 `accessToken/refresh` + `h5/accessEntrance` 两个请求)
-4. 收到 `🎉 凭证已抓取` 通知即入库
+2. Loon 开抓包,**杀掉驴充充 App 重新冷启动**(触发 `/accessToken/refresh` 拿 `refreshToken`)
+3. 进入「我的 → 积分中心 / 签到」页(触发 `/h5/accessEntrance` 拿 `phone`+`userId`)
+4. 收到 `✅ 驴充充 Cookie 获取成功` 通知即抓取成功
 5. **抓完关掉 App**(避免 App 继续把 `refreshToken` 滚到新值,作废脚本手里的那个)
 6. cron 自动签到
+
+> ⚠️ 只开着进页面、不冷启,通常抓不到 `refreshToken`(它只在 App 冷启动/ token 过期时才发)。必须**杀进程重开**。
 
 ## Loon
 
@@ -24,7 +27,7 @@
 hostname = appapi.lvcchong.com
 
 [Script]
-http-request ^https:\/\/appapi\.lvcchong\.com\/(accessToken\/refresh|appBaseApi\/h5\/accessEntrance) tag=驴充充 凭证, script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/lvcchong/lvcchong.js, requires-body=true
+http-request ^https:\/\/appapi\.lvcchong\.com\/(accessToken\/refresh|appBaseApi\/h5\/accessEntrance) tag=驴充充 Cookie, script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/lvcchong/lvcchong.cookie.js, requires-body=true
 
 cron "20 8 * * *" script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/lvcchong/lvcchong.js, tag=驴充充签到, enable=true
 ```
@@ -36,7 +39,7 @@ cron "20 8 * * *" script-path=https://raw.githubusercontent.com/MaYIHEI/papercli
 hostname = appapi.lvcchong.com
 
 [Script]
-驴充充 凭证 = type=http-request,pattern=^https:\/\/appapi\.lvcchong\.com\/(accessToken\/refresh|appBaseApi\/h5\/accessEntrance),requires-body=true,max-size=0,script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/lvcchong/lvcchong.js
+驴充充 Cookie = type=http-request,pattern=^https:\/\/appapi\.lvcchong\.com\/(accessToken\/refresh|appBaseApi\/h5\/accessEntrance),requires-body=true,max-size=0,script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/lvcchong/lvcchong.cookie.js
 
 驴充充签到 = type=cron,cronexp=20 8 * * *,timeout=60,script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/lvcchong/lvcchong.js
 ```
@@ -48,7 +51,7 @@ hostname = appapi.lvcchong.com
 hostname = appapi.lvcchong.com
 
 [rewrite_local]
-^https:\/\/appapi\.lvcchong\.com\/(accessToken\/refresh|appBaseApi\/h5\/accessEntrance) url script-request-body https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/lvcchong/lvcchong.js
+^https:\/\/appapi\.lvcchong\.com\/(accessToken\/refresh|appBaseApi\/h5\/accessEntrance) url script-request-body https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/lvcchong/lvcchong.cookie.js
 
 [task_local]
 20 8 * * * https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/lvcchong/lvcchong.js, tag=驴充充签到, enabled=true
@@ -68,9 +71,14 @@ http:
     - "appapi.lvcchong.com"
   script:
     - match: ^https:\/\/appapi\.lvcchong\.com\/(accessToken\/refresh|appBaseApi\/h5\/accessEntrance)
-      name: 驴充充 凭证
+      name: 驴充充 Cookie
       type: request
       require-body: true
+
+script-providers:
+  驴充充签到:
+    url: https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/lvcchong/lvcchong.js
+    interval: 86400
 ```
 
 ## 实现细节
@@ -83,16 +91,16 @@ http:
 - **签到判定** — `code===200` 且有 `data` 即成功,读 `signDays`(累计天数)+ `score`(本次积分)
 - **凭证存储** — BoxJS key `lvcchong_auth`(JSON),含 `refreshToken`/`userToken`/`phone`/`userId`/`deviceId` 等;`refreshToken` 每次刷新自动更新
 
-## 已知限制 / 待观察
-
-- **跨天续命未验证**:只实测了 refreshToken 过期 52 分钟仍可用,cron 一天一跑需要 ≥24 小时宽限。若隔天失效,把 cron 改成**每几小时跑一次**保温(refreshToken 滚动,刷一次就续命)即可
-- **`refreshToken` 滚动**:脚本和 App 不能同时滚同一个家族的 token。抓完凭证后尽量别再开 App 的积分页,否则可能把脚本存的那个滚作废 → 需重抓
-- **`deviceId` 绑定**:`refresh` 校验设备指纹,脚本用抓包时那台的 `deviceId`,换设备可能触发风控
-- **只做基础签到**:「看视频多领积分」(`receiveTaskScore`)带加密 `nonce`+`content` 且依赖腾讯激励视频广告观看回执,脚本不做
-- 失效时脚本提示「重抓凭证」,按使用步骤重抓即可
-
 ## 维护记录
 
 | 日期 | 变更 |
 |---|---|
 | 2026-06-02 | 初版,refreshToken 续命,三步链 refresh→accessEntrance→userSign,sourceType=3 |
+
+## 已知限制
+
+- **跨天续命未验证**:只实测了 refreshToken 过期 52 分钟仍可用,cron 一天一跑需要 ≥24 小时宽限。若隔天失效,把 cron 改成**每几小时跑一次**保温(refreshToken 滚动,刷一次就续命)
+- **`refreshToken` 滚动**:脚本和 App 不能同时滚同一家族的 token。抓完 Cookie 后尽量别再开 App 积分页,否则可能把脚本存的滚作废 → 需重抓
+- **`deviceId` 绑定**:`refresh` 校验设备指纹,脚本用抓包时那台的 `deviceId`,换设备可能触发风控
+- **只做基础签到**:「看视频多领积分」(`receiveTaskScore`)带加密 `nonce`+`content` 且依赖腾讯激励视频广告观看回执,脚本不做
+- 失效时脚本提示「重抓 Cookie」,按使用步骤重抓即可
