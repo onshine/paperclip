@@ -161,45 +161,57 @@ async function sendMsg(message) {
 
 // ============ Cookie 抓取(rewrite 模式) ============
 
-// 同时匹配 accessToken/refresh 与 h5/accessEntrance,各取所需字段合并入库。
-// refresh 带 refreshToken(body)+ device_* 头;accessEntrance 带 phone+userId(body)。
+// refreshToken 是「一次性滚动」:请求体里的是即将作废的旧值,服务器换成新值塞回【响应体】。
+// 所以 refreshToken/userToken 只从 http-response 抓(最新有效的那个);
+// phone/设备指纹这些不会滚动,从 http-request 抓即可。
 function captureAuth() {
     try {
-        if ($request.method === "OPTIONS") return;
-        const url = $request.url || "";
-        const headers = lowerKeys($request.headers);
-        const body = parseForm($request.body || "");
+        if ($request && $request.method === "OPTIONS") return;
+        const url = ($request && $request.url) || "";
         const auth = $.getjson(CK_AUTH, {}) || {};
+        const wasFull = auth.refreshToken && auth.phone && auth.userId;
         let touched = false;
 
-        if (/accessToken\/refresh/.test(url)) {
-            if (body.refreshToken) (auth.refreshToken = body.refreshToken), (touched = true);
-            pick(auth, headers, "deviceId", "device_id");
-            pick(auth, headers, "deviceType", "device_type");
-            pick(auth, headers, "deviceOs", "device_os");
-            pick(auth, headers, "deviceOsVersion", "device_os_version");
-            pick(auth, headers, "deviceName", "device_name");
-            pick(auth, headers, "appVersion", "app_version");
-            pick(auth, headers, "channel", "channel_name");
-            if (headers["token"]) auth.userToken = headers["token"];
-        } else if (/h5\/accessEntrance/.test(url)) {
-            if (body.phone) (auth.phone = body.phone), (touched = true);
-            if (body.userId) auth.userId = body.userId;
-            if (body.ownerId != null) auth.ownerId = body.ownerId;
-            if (headers["token"]) auth.userToken = headers["token"];
+        if (typeof $response !== "undefined" && $response) {
+            // 响应模式:取服务端【新签发】的 refreshToken(请求体里的旧值用过即废,不能存)
+            let data = {};
+            try {
+                data = (JSON.parse($response.body || "{}") || {}).data || {};
+            } catch {}
+            if (data && data.refreshToken) (auth.refreshToken = data.refreshToken), (touched = true);
+            if (data && data.userToken) auth.userToken = data.userToken;
+            if (data && data.userId) auth.userId = data.userId;
+        } else if (typeof $request !== "undefined") {
+            // 请求模式:取 phone / userId / ownerId / 设备指纹(都不滚动)
+            const headers = lowerKeys($request.headers);
+            const body = parseForm($request.body || "");
+            if (/h5\/accessEntrance/.test(url)) {
+                if (body.phone) (auth.phone = body.phone), (touched = true);
+                if (body.userId) auth.userId = body.userId;
+                if (body.ownerId != null) auth.ownerId = body.ownerId;
+            }
+            if (/accessToken\/refresh/.test(url)) {
+                pick(auth, headers, "deviceId", "device_id");
+                pick(auth, headers, "deviceType", "device_type");
+                pick(auth, headers, "deviceOs", "device_os");
+                pick(auth, headers, "deviceOsVersion", "device_os_version");
+                pick(auth, headers, "deviceName", "device_name");
+                pick(auth, headers, "appVersion", "app_version");
+                pick(auth, headers, "channel", "channel_name");
+            }
         }
 
-        if (!touched && !auth.refreshToken) {
-            $.log("[WARN] 本次未抓到关键字段,请先杀进程冷启 App,再进积分签到页");
-            return;
-        }
+        if (!touched) return;
         $.setjson(auth, CK_AUTH);
+
         const full = auth.refreshToken && auth.phone && auth.userId;
-        $.msg(
-            $.name,
-            full ? "✅ 驴充充 Cookie 获取成功" : "⏳ 驴充充 Cookie 部分获取",
-            full ? "可关掉 App,cron 自动签到" : "缺 " + missing(auth) + ",请冷启 App 并进积分签到页补全"
-        );
+        // 只在「首次集齐」时通知一次;之后 refreshToken 随 App 滚动静默更新(最后一个最新),
+        // 避免每 30 秒一次刷新就弹一条
+        if (full && !wasFull) {
+            $.msg($.name, "✅ 驴充充 Cookie 获取成功", "再停留 2 秒让它存到最新,然后关掉 App");
+        } else if (!full) {
+            $.log(`[INFO] Cookie 部分获取,还缺: ${missing(auth)}`);
+        }
     } catch (e) {
         $.log(`[ERROR] Cookie 抓取异常: ${e}`);
     }

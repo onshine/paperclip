@@ -31,6 +31,7 @@ hostname = appapi.lvcchong.com
 
 [Script]
 http-request ^https:\/\/appapi\.lvcchong\.com\/(accessToken\/refresh|appBaseApi\/h5\/accessEntrance) tag=驴充充 Cookie, script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/lvcchong/lvcchong.js, requires-body=true, img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/lvcchong.png
+http-response ^https:\/\/appapi\.lvcchong\.com\/(accessToken\/refresh|appBaseApi\/h5\/accessEntrance) tag=驴充充 Cookie, script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/lvcchong/lvcchong.js, requires-body=true, img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/lvcchong.png
 
 cron "20 8 * * *" script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/lvcchong/lvcchong.js, tag=驴充充签到, img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/lvcchong.png, enable=true
 ```
@@ -42,7 +43,9 @@ cron "20 8 * * *" script-path=https://raw.githubusercontent.com/MaYIHEI/papercli
 hostname = appapi.lvcchong.com
 
 [Script]
-驴充充 Cookie = type=http-request,pattern=^https:\/\/appapi\.lvcchong\.com\/(accessToken\/refresh|appBaseApi\/h5\/accessEntrance),requires-body=true,max-size=0,script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/lvcchong/lvcchong.js,img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/lvcchong.png
+驴充充 CookieReq = type=http-request,pattern=^https:\/\/appapi\.lvcchong\.com\/(accessToken\/refresh|appBaseApi\/h5\/accessEntrance),requires-body=true,max-size=0,script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/lvcchong/lvcchong.js,img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/lvcchong.png
+
+驴充充 CookieResp = type=http-response,pattern=^https:\/\/appapi\.lvcchong\.com\/(accessToken\/refresh|appBaseApi\/h5\/accessEntrance),requires-body=true,max-size=0,script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/lvcchong/lvcchong.js,img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/lvcchong.png
 
 驴充充签到 = type=cron,cronexp=20 8 * * *,timeout=60,script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/lvcchong/lvcchong.js,img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/lvcchong.png
 ```
@@ -55,6 +58,7 @@ hostname = appapi.lvcchong.com
 
 [rewrite_local]
 ^https:\/\/appapi\.lvcchong\.com\/(accessToken\/refresh|appBaseApi\/h5\/accessEntrance) url script-request-body https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/lvcchong/lvcchong.js
+^https:\/\/appapi\.lvcchong\.com\/(accessToken\/refresh|appBaseApi\/h5\/accessEntrance) url script-response-body https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/lvcchong/lvcchong.js
 
 [task_local]
 20 8 * * * https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/lvcchong/lvcchong.js, tag=驴充充签到, img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/lvcchong.png, enabled=true
@@ -74,8 +78,12 @@ http:
     - "appapi.lvcchong.com"
   script:
     - match: ^https:\/\/appapi\.lvcchong\.com\/(accessToken\/refresh|appBaseApi\/h5\/accessEntrance)
-      name: 驴充充 Cookie
+      name: 驴充充 CookieReq
       type: request
+      require-body: true
+    - match: ^https:\/\/appapi\.lvcchong\.com\/(accessToken\/refresh|appBaseApi\/h5\/accessEntrance)
+      name: 驴充充 CookieResp
+      type: response
       require-body: true
 
 script-providers:
@@ -93,12 +101,14 @@ script-providers:
   3. `POST /appBaseApi/scoreUser/sign/userSign` 送 H5 token + `sourceType=3` → 签到
 - **签到判定** — `code===200` 且有 `data` 即成功,读 `signDays`(累计天数)+ `score`(本次积分)
 - **凭证存储** — BoxJS key `lvcchong_auth`(JSON),含 `refreshToken`/`userToken`/`phone`/`userId`/`deviceId` 等;`refreshToken` 每次刷新自动更新
+- **抓取分两路** — `refreshToken` 是「一次性滚动」,请求体里的旧值用过即废,所以只从 **http-response** 抓服务端新签发的那个;`phone`/设备指纹不滚动,从 **http-request** 抓。集齐才通知一次,之后随 App 滚动静默存最新
 
 ## 维护记录
 
 | 日期 | 变更 |
 |---|---|
 | 2026-06-02 | 初版,refreshToken 续命,三步链 refresh→accessEntrance→userSign,sourceType=3 |
+| 2026-06-02 | 修 `TOKEN已刷新` 失效:refreshToken 改从 http-response 抓(请求体里是用过即废的旧值) |
 
 ## 已知限制
 
