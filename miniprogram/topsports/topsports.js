@@ -6,6 +6,7 @@
  * @Author: MaYIHEI <https://github.com/MaYIHEI/paperclip>
  * @Channel: Telegram 频道 https://t.me/mayihei
  * @Created: 2026-05-31
+ * @Updated: 2026-06-02
  *
  * ===== Loon =====
  * [MITM]
@@ -50,6 +51,9 @@
  */
 
 const $ = new Env("滔搏");
+
+const SCRIPT_VERSION = "2026-06-02.4"; // 改一次 +1,跑日志可见,确认是否拉到最新版
+$.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
 
 const CK_COOKIE = "topsports_cookie"; // 完整 Cookie(含 Authorization=UUID, memberId)
 
