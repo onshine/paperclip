@@ -4,6 +4,8 @@
 
 # 滔搏
 
+> 📦 **已归档** · `Authorization` 每次开小程序即轮换、旧的作废,续期需微信 jscode 登录,脚本无解,不再维护,仅保留历史
+
 滔搏运动(Topsports)微信小程序「每日中心」签到送积分。鉴权用 Cookie 里的 `Authorization`(UUID 会话票据)+ `memberId`,无签名。`activityId` 由 `actInfo` 接口动态获取,不写死。
 
 ## 文件

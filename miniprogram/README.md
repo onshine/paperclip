@@ -19,8 +19,8 @@
 | [`lhtj/`](./lhtj/) | 龙湖天街 - 每日签到(仅小程序通道) | ✅ 维护中 |
 | [`casetify/`](./casetify/) | CASETiFY - 每日签到 | 📦 已归档 |
 | [`songshan/`](./songshan/) | 松山棉店 - 每日签到(微盟 SaaS) | 🧪 待验证 |
-| [`wedome/`](./wedome/) | 味多美 - 每日签到(卓健/大咖 SaaS) | 🧪 待验证 |
-| [`topsports/`](./topsports/) | 滔搏运动 - 每日签到 | 🧪 待验证 |
+| [`wedome/`](./wedome/) | 味多美 - 每日签到(卓健/大咖 SaaS) | 📦 已归档 |
+| [`topsports/`](./topsports/) | 滔搏运动 - 每日签到 | 📦 已归档 |
 
 
 ---
