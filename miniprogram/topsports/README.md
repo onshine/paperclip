@@ -89,22 +89,27 @@ script-providers:
 | 日期 | 变更 |
 |---|---|
 | 2026-05-31 | 初版,Cookie 鉴权,activityId 走 actInfo 动态获取,brandCode=TS |
-| 2026-06-01 | ~~doSign 50010 修复:补 `version` + `sec-fetch-*` 请求头~~(假设有误,见下条) |
-| 2026-06-02 | doSign 50010 第一刀:补 `refreshAcwTc()` 刷新过期 acw_tc(阿里云 WAF cookie,Max-Age=1800/30分钟,由 `/static/setCookieApplets.html` 下发)。acw_tc 已刷新但仍 50010,**证明 acw_tc 非唯一原因** |
-| 2026-06-02 | doSign 50010 第二刀(假设验证中):请求内容在"刚抓完成功"与"过段时间失败"两次间完全相同,唯一变量是时间 → 卡服务端会话窗口。doSign 前补 `getTimeStamp` + `loginStatus` 两个激活调用(复刻小程序进页面流程) |
+| 2026-06-01 | ~~doSign 50010:补 `version` + `sec-fetch-*` 请求头~~(假设有误) |
+| 2026-06-02 | ~~doSign 50010:`refreshAcwTc()` 刷新 acw_tc~~ / ~~补 getTimeStamp+loginStatus 激活会话~~(均证伪)。`refreshAcwTc()` 保留(超 30 分钟仍需新 acw_tc) |
+| 2026-06-02 | **doSign 50010 真因确诊:`Authorization` 轮换**。50010 改为可操作提示「重抓 cookie」。删除证伪的激活调用 |
 
-## doSign 50010 排查结论(抓包还原)
+## doSign 50010 排查结论(抓包 + 对照实验确诊)
 
-小程序进「每日中心」页的时序:**先** GET `/static/setCookieApplets.html?url=...&Authorization=..&appletsSource=..&memberId=..&version=..` → 响应 `Set-Cookie: acw_tc=..;Max-Age=1800` → **再**走 actInfo / doSign。
-- `acw_tc` 30 分钟过期,且**只有这个入口接口会下发**,actInfo/doSign 响应都不刷新它
-- 旧 acw_tc 失效后:`actInfo` 校验宽松仍能拿到 activityId,`doSign` 走 WAF 严格校验 → 50010「小程序权限不足」
-- 所以现象是「刚抓完成功、过 30 分钟只挂 doSign」
-- `refreshAcwTc()` 用 cookie 里已有的 Authorization/appletsSource/memberId/version 重放该入口,拿新 acw_tc 回写
+**真因:`Authorization` 每次打开小程序都会轮换,旧的作废。**
+- 抓包对照:cron 存的 auth 末位 `…ab81e9` = 抓包里正在被淘汰的旧 auth;小程序已换成新的(`…39617`),doSign 用新的才成功
+- 对照实验:重进每日中心页重抓 → auth 末位变(`ab81e9→8f94d5`)→ doSign 不再 50010
+- `actInfo` 校验宽松(旧 auth 仍给 activityId),`doSign` 严格(旧 auth 即「小程序权限不足」),所以只挂 doSign
+- 现象「刚抓完成功、过段时间失败」= 抓完后又开过小程序(auth 轮换)或 auth 自身到期
+
+**这不是脚本能修的 bug**:拿新 auth 需要微信 jscode 登录,脚本做不到。50010 时脚本提示重抓即可。
+
+### acw_tc(次要、已处理)
+- `acw_tc` 是阿里云 WAF cookie(`Set-Cookie;Max-Age=1800`/30 分钟、HttpOnly),只由 `/static/setCookieApplets.html` 下发,签到接口不刷新
+- `refreshAcwTc()` 重放该入口拿新 acw_tc(超 30 分钟仍需要),依赖代理内核把 HttpOnly 的 Set-Cookie 暴露给脚本(Loon 实测可拿到)
 
 ## 已知限制
 
 - 单脚本架构(`$request` 是否存在区分抓 cookie / cron)
-- `Authorization` 为 UUID 会话票据,过期后 `actInfo` 失败、脚本提示「Cookie 失效」,需重新进小程序「每日中心」页重抓
-- **依赖代理内核把 `setCookieApplets.html` 响应的 `Set-Cookie`(HttpOnly)暴露给脚本**;若内核屏蔽,`refreshAcwTc()` 拿不到新 acw_tc,日志会 WARN,此时只能临近签到时间重抓 cookie
+- **`Authorization` 会因打开小程序而轮换,定时签到只在"未再打开小程序 + auth 未到期"期间有效**;失效后脚本报 50010 并提示,需重进每日中心页重抓。auth 自身存活时长待长期观察
 - 完整 cookie 需含 `appletsSource`/`memberId`(靠 normalizeCookie 拆脏前缀)
 - `brandCode` 固定 `TS`

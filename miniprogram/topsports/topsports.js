@@ -52,7 +52,7 @@
 
 const $ = new Env("滔搏");
 
-const SCRIPT_VERSION = "2026-06-02.5"; // 改一次 +1,跑日志可见,确认是否拉到最新版
+const SCRIPT_VERSION = "2026-06-02.6"; // 改一次 +1,跑日志可见,确认是否拉到最新版
 $.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
 
 const CK_COOKIE = "topsports_cookie"; // 完整 Cookie(含 Authorization=UUID, memberId)
@@ -130,16 +130,7 @@ async function checkin() {
     const activityId = actInfo.data.activityId;
     $.log(`[INFO] activityId=${activityId}`);
 
-    // [临时诊断] 打 Authorization 末位(脱敏),用于对照重抓前后是否轮换。定位后删除。
-    $.log(`[DIAG] Authorization …${(getCookieVal("Authorization") || "").slice(-6)}`);
-
-    // 2) 激活服务端会话:小程序进页面后、doSign 前会先调 getTimeStamp + loginStatus,
-    //    doSign 要求这个会话状态"新鲜"。隔一段时间不激活直接 doSign 即 50010「权限不足」
-    //    (acw_tc 已刷新仍 50010 → 卡的是服务端会话窗口,不是 cookie)。这里重放这两个激活调用。
-    await request("GET", "/h5/act/signIn/getTimeStamp", null);
-    await request("GET", "/h5/act/loginStatus", null);
-
-    // 3) 签到
+    // 2) 签到
     const res = await request("POST", "/h5/act/signIn/doSign", { activityId, brandCode: BRAND });
     debug(res, "doSign");
 
@@ -150,8 +141,12 @@ async function checkin() {
         $.messages.push(`✅ 签到成功${prize ? ": " + prize : ""}`);
     } else if (res && (res.bizCode === 20001 || /已签|重复/.test(res.bizMsg || ""))) {
         $.messages.push("✨ 今日已签到");
+    } else if (res && res.errorCode === 50010) {
+        // 50010「小程序权限不足」= Authorization 已轮换/失效。每次打开小程序都会换新 auth 让旧的作废,
+        // actInfo 宽松仍能过、doSign 严格即报此码。脚本无法做微信登录,只能重抓。
+        $.messages.push("❌ 签到失败: Authorization 已失效(重开过小程序会轮换)\n👉 重进滔搏「每日中心」页重抓 cookie 即可");
     } else {
-        $.messages.push(`❌ 签到失败: ${res ? res.bizMsg || $.toStr(res) : "无响应"}`);
+        $.messages.push(`❌ 签到失败: ${res ? res.message || res.bizMsg || $.toStr(res) : "无响应"}`);
     }
 }
 
