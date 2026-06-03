@@ -12,7 +12,7 @@
 
 const $ = new Env("特来电");
 
-const SCRIPT_VERSION = "2026-06-03.poc1"; // 改一次 +1,确认拉到最新版
+const SCRIPT_VERSION = "2026-06-03.poc2"; // 改一次 +1,确认拉到最新版
 $.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
 
 const CK_AUTH = "teld_auth"; // telda/teldb/ip/userId 等,抓取写入
@@ -95,12 +95,27 @@ function captureAuth() {
 
 async function checkin() {
     const auth = $.getjson(CK_AUTH, {});
-    if (!auth || !auth.telda) throw new Error("未配置 Cookie,请先进特来电「签到365天」页抓取");
+    if (!auth || !auth.telda) throw new Error(`[${SCRIPT_VERSION}] 未配置 Cookie,请先进特来电「签到365天」页抓取`);
 
     const wts = Math.round(Date.now() / 1000);
     const wver = buildWVER(wts);
     const ip = auth.teldz || "0.0.0.0";
     const rid = `${auth.userId || ""}_${Date.now()}_WRF`;
+
+    // telda 剩余有效期(诊断:失败时先看是不是 telda 过期了)
+    const teldaPayload = jwtPayload(auth.telda);
+    const teldaRemain =
+        teldaPayload && teldaPayload.exp ? Math.round((teldaPayload.exp - wts) / 60) : null;
+
+    // 逐项打印检测参数,失败时直接对照
+    $.log(`[检测] 版本=${SCRIPT_VERSION}`);
+    $.log(`[检测] WTS=${wts}  WVER长度=${wver.length}(应256) 前16=${wver.slice(0, 16)}`);
+    $.log(`[检测] telda 末8=${(auth.telda || "").slice(-8)}  剩余=${teldaRemain == null ? "?" : teldaRemain}分钟`);
+    $.log(`[检测] WSDI(IP)=${ip}  userId=${auth.userId || "空"}  teldb=${auth.teldb ? "有" : "无"}`);
+    $.log(`[检测] cna=${auth.cna ? "有" : "无"}  __jsluid_s=${auth.jsluid ? "有" : "无"}  RequestID=${rid}`);
+    if (teldaRemain != null && teldaRemain < 0) {
+        $.log(`[检测] ⚠️ telda 已过期 ${-teldaRemain} 分钟,大概率打卡会被拒,建议重抓`);
+    }
 
     const form = buildForm({
         request: "{}",
@@ -116,18 +131,24 @@ async function checkin() {
     });
 
     const res = await post(`${API}?SID=ProSrv-CompleteCheckInTask`, form, auth);
-    debug(res, "CompleteCheckInTask");
+    $.log(`[响应] ${res ? JSON.stringify(res).slice(0, 400) : "无响应(网络错误/被拦)"}`);
 
+    const tag = `[${SCRIPT_VERSION}]`;
     if (res && res.state === "1" && res.data) {
         if (res.data.IsCheckInSuccess) {
             $.messages.push(`✅ 签到成功,连续 ${res.data.ContinuousDays} 天,累计 ${res.data.TotalDays} 天`);
         } else {
             $.messages.push(`✨ 今日已签到(连续 ${res.data.ContinuousDays} 天)`);
         }
-    } else if (res && /token|登录|权限|未授权/i.test(JSON.stringify(res))) {
-        $.messages.push(`❌ 打卡失败(疑似 telda 失效): ${res.errmsg || JSON.stringify(res)}\n👉 重进签到页重抓 Cookie`);
+    } else if (!res) {
+        $.messages.push(`${tag} ❌ 无响应(网络错误或被加速乐拦截)`);
+    } else if (/token|登录|权限|未授权|unauthor|expire/i.test(JSON.stringify(res))) {
+        const ageHint = teldaRemain != null && teldaRemain < 0 ? `(telda 已过期${-teldaRemain}分)` : "";
+        $.messages.push(`${tag} ❌ 鉴权失败${ageHint}: errcode=${res.errcode} ${res.errmsg || ""}\n👉 重进签到页重抓 Cookie`);
+    } else if (/sign|签名|wver|验签|verif/i.test(JSON.stringify(res))) {
+        $.messages.push(`${tag} ❌ 疑似签名问题(WVER/Sign): errcode=${res.errcode} ${res.errmsg || ""}`);
     } else {
-        $.messages.push(`❌ 打卡失败: ${res ? JSON.stringify(res).slice(0, 200) : "无响应"}`);
+        $.messages.push(`${tag} ❌ 打卡失败: state=${res.state} errcode=${res.errcode} errmsg=${res.errmsg || ""}\n${JSON.stringify(res).slice(0, 200)}`);
     }
 }
 
