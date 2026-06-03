@@ -13,7 +13,7 @@
 
 const $ = new Env("特来电");
 
-const SCRIPT_VERSION = "2026-06-04.r1"; // 改一次 +1,确认拉到最新版
+const SCRIPT_VERSION = "2026-06-04.r2"; // 改一次 +1,确认拉到最新版
 $.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
 
 const CK_AUTH = "teld_auth"; // telda/teldb/ip/userId 等,抓取写入、刷新后自动滚动更新
@@ -311,15 +311,20 @@ function captureAuth() {
     try {
         if ($request.method === "OPTIONS") return;
         const headers = lowerKeys($request.headers);
-        const cookieStr = headers["cookie"] || "";
+        // HTTP/2 下 telda/teldb 各占一个 cookie 头,Loon 合并时可能残留 "cookie:" 脏前缀或拆成多行,
+        // 统一拼回标准 "k=v; k=v"(同 topsports 踩过的坑)
+        const cookieStr = normalizeCookie(headers["cookie"]);
         const get = (n) => {
             const m = new RegExp(`(?:^|[;\\s])${n}=([^;]+)`).exec(cookieStr);
             return m ? m[1] : "";
         };
         const telda = get("telda");
         const teldb = get("teldb");
+        // 始终打日志,方便定位"抓不到"
+        $.log(`[capture] 触发 ${($request.url || "").split("?")[0]}  cookie长度=${cookieStr.length}  telda=${telda ? "有" : "无"} teldb=${teldb ? "有" : "无"}`);
         if (!teldb) {
-            $.log("[capture] 本次请求没有 teldb(刷新必需),跳过");
+            if (!cookieStr) $.log("[capture] cookie 头为空,换个带 telda 的接口或重进页面");
+            else $.log(`[capture] 没解到 teldb,cookie 前80=${cookieStr.slice(0, 80)}`);
             return;
         }
         const auth = {
@@ -472,6 +477,16 @@ function jwtField(token, f) {
 function jwtUserId(token) {
     const p = jwtPayload(token);
     return p && p.data ? p.data.UserId : "";
+}
+
+// 清理 Loon 合并多 cookie 头时残留的 "cookie:" 脏前缀,拼回标准 "k=v; k=v"
+function normalizeCookie(raw) {
+    if (!raw) return "";
+    const parts = Array.isArray(raw) ? raw : String(raw).split(/\r?\n/);
+    return parts
+        .map((p) => String(p).replace(/^cookie\s*:\s*/i, "").trim())
+        .filter(Boolean)
+        .join("; ");
 }
 
 function lowerKeys(obj) {
