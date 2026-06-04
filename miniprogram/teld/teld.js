@@ -13,7 +13,7 @@
 
 const $ = new Env("特来电");
 
-const SCRIPT_VERSION = "2026-06-04.r2"; // 改一次 +1,确认拉到最新版
+const SCRIPT_VERSION = "2026-06-04.r3"; // 改一次 +1,确认拉到最新版
 $.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
 
 const CK_AUTH = "teld_auth"; // telda/teldb/ip/userId 等,抓取写入、刷新后自动滚动更新
@@ -269,7 +269,10 @@ function rand16() {
 async function refresh(auth) {
     if (!auth.teldb) throw new Error(`[${SCRIPT_VERSION}] 缺 teldb,无法刷新,请重进签到页抓取`);
     const ip = auth.teldz || "0.0.0.0";
-    const param = JSON.stringify({ DeviceType: "WEB", ReqSource: 100, RefreshToken: auth.teldb, ClientIP: ip });
+    // teldb cookie / 响应返回的 teldb 都是「签名.载荷.A01头」颠倒序存的;发请求时要还原成正常 JWT 序
+    const refreshTok = String(auth.teldb).split(".").reverse().join(".");
+    $.log(`[刷新] teldb 还原后头12=${refreshTok.slice(0, 12)}(应 A01eyJ 开头)`);
+    const param = JSON.stringify({ DeviceType: "WEB", ReqSource: 100, RefreshToken: refreshTok, ClientIP: ip });
     const uts = String(Math.round(Date.now() / 1000));
     const uver = rand16(); // IV,任意 16 字符,服务端按发来的 UVER 解
     const dataEnc = aesEncrypt(param, uts + "000000", uver);
