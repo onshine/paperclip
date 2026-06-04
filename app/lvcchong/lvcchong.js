@@ -1,13 +1,10 @@
 /**
  * 驴充充 · 每日签到(积分中心「签到领积分」)
  *
- * 📦 已归档:实测 refreshToken 空闲仅 ~20 分钟即失效,定时 cron 间隔 ≫ 20 分钟,必然失败;
- *   长期登录态绑运营商一键登录(SIM),脚本无解。逻辑跑得通,纯卡 token 寿命。详见 README「归档原因」。
+ * 📦 已归档:refreshToken 空闲仅 ~20 分钟,长期登录态绑运营商一键登录(SIM),定时 cron 无解。详见 README。
  *
- * 单脚本: 有 $request 时抓 Cookie(冷启 App 触发 /accessToken/refresh + 进积分页触发 /h5/accessEntrance),
- *   无 $request 时 cron 签到。续命原理: token 的 JWT 只写 30/90 秒过期,但服务端不认、按 jti 记账,
- *   实测 refreshToken 过期 52 分钟仍能换新,故存下 refreshToken 即可长期续命。
- * 三步链: /accessToken/refresh → /h5/accessEntrance → /scoreUser/sign/userSign,签到无签名。
+ * 抓取方式: 冷启 App 触发 /accessToken/refresh、进积分页触发 /h5/accessEntrance,抓 refreshToken。
+ * 单脚本:$request 存在时抓 Cookie,不存在时 cron 签到(续命原理/三步链见 README 实现细节)。
  *
  * @Author: MaYIHEI <https://github.com/MaYIHEI/paperclip>
  * @Channel: Telegram 频道 https://t.me/mayihei
