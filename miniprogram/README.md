@@ -18,7 +18,7 @@
 | [`longde/`](./longde/) | 龙德广场 - 每日签到 | ✅ 维护中 |
 | [`lhtj/`](./lhtj/) | 龙湖天街 - 每日签到(仅小程序通道) | ✅ 维护中 |
 | [`casetify/`](./casetify/) | CASETiFY - 每日签到 | 📦 已归档 |
-| [`songshan/`](./songshan/) | 松山棉店 - 每日签到(微盟 SaaS) | 🧪 待验证 |
+| [`songshan/`](./songshan/) | 松山棉店 - 每日签到(微盟 SaaS) | ✅ 维护中 |
 | [`wedome/`](./wedome/) | 味多美 - 每日签到(卓健/大咖 SaaS) | 📦 已归档 |
 | [`topsports/`](./topsports/) | 滔搏运动 - 每日签到 | 📦 已归档 |
 | [`teld/`](./teld/) | 特来电 - 每日打卡(签到365天领手机) | 🧪 待验证 |
