@@ -1,32 +1,32 @@
 /**
  * 味多美 · 每日签到(每日签到领积分,每日 +2 分)
  *
- * 抓取:打开「味多美」小程序 → 进「签到」页(自动触发 get),抓 buyer-token
- * 签到:cron 定时自动签到
+ * 抓取:打开「味多美」小程序 → 进「签到」页(登录触发 minaLogin),自动抓公众号 openid
+ * 签到:cron 用 openid 换 token(loginByOpenid)→ 取 activityId → 签到(openid 永久固定,免续期)
  *
  * @Author: MaYIHEI <https://github.com/MaYIHEI/paperclip>
  * @Channel: Telegram 频道 https://t.me/mayihei
- * @Updated: 2026-05-31
+ * @Updated: 2026-06-05
  *
  * ===== Loon =====
  * [MITM]
  * hostname = scrm-b.zjian.net
  * [Script]
- * http-request ^https:\/\/scrm-b\.zjian\.net\/api\/marketing\/pointSignInActivitySet\/get tag=味多美 Cookie, script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/miniprogram/wedome/wedome.js, requires-body=false, img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/wedome.png
+ * http-response ^https:\/\/scrm-b\.zjian\.net\/api\/member\/minaLogin tag=味多美 Cookie, script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/miniprogram/wedome/wedome.js, requires-body=true, img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/wedome.png
  * cron "10 8 * * *" script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/miniprogram/wedome/wedome.js, tag=味多美签到, img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/wedome.png, enable=true
  *
  * ===== Surge =====
  * [MITM]
  * hostname = scrm-b.zjian.net
  * [Script]
- * 味多美 Cookie = type=http-request,pattern=^https:\/\/scrm-b\.zjian\.net\/api\/marketing\/pointSignInActivitySet\/get,requires-body=false,script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/miniprogram/wedome/wedome.js,img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/wedome.png
+ * 味多美 Cookie = type=http-response,pattern=^https:\/\/scrm-b\.zjian\.net\/api\/member\/minaLogin,requires-body=true,max-size=0,script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/miniprogram/wedome/wedome.js,img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/wedome.png
  * 味多美签到 = type=cron,cronexp=10 8 * * *,timeout=60,script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/miniprogram/wedome/wedome.js,img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/wedome.png
  *
  * ===== Quantumult X =====
  * [MITM]
  * hostname = scrm-b.zjian.net
  * [rewrite_local]
- * ^https:\/\/scrm-b\.zjian\.net\/api\/marketing\/pointSignInActivitySet\/get url script-request-header https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/miniprogram/wedome/wedome.js
+ * ^https:\/\/scrm-b\.zjian\.net\/api\/member\/minaLogin url script-response-body https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/miniprogram/wedome/wedome.js
  * [task_local]
  * 10 8 * * * https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/miniprogram/wedome/wedome.js, tag=味多美签到, img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/wedome.png, enabled=true
  *
@@ -40,10 +40,10 @@
  *   mitm:
  *     - "scrm-b.zjian.net"
  *   script:
- *     - match: ^https:\/\/scrm-b\.zjian\.net\/api\/marketing\/pointSignInActivitySet\/get
+ *     - match: ^https:\/\/scrm-b\.zjian\.net\/api\/member\/minaLogin
  *       name: 味多美 Cookie
- *       type: request
- *       require-body: false
+ *       type: response
+ *       require-body: true
  * script-providers:
  *   味多美签到:
  *     url: https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/miniprogram/wedome/wedome.js
@@ -52,131 +52,122 @@
 
 const $ = new Env("味多美");
 
-const SCRIPT_VERSION = "2026-05-31.r1"; // 改一次 +1,确认拉到最新版
+const SCRIPT_VERSION = "2026-06-05.r1"; // 改一次 +1,确认拉到最新版
 $.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
 
-const CK_TOKEN = "wedome_token";   // buyer-token
-const CK_BRAND = "wedome_brandid"; // brandId 请求头
+const CK_OPENID = "wedome_openid"; // 公众号 openid(永久固定),抓取写入,也可 BoxJS 手填
+
+const BASE = "https://scrm-b.zjian.net";
+const BRAND_ID = "2039";
+const REFERER = "https://servicewechat.com/wxbf56db97c9390bb0/25/page-frame.html";
+const UA =
+    "Mozilla/5.0 (iPhone; CPU iPhone OS 26_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.74(0x18004a27) NetType/WIFI Language/zh_CN";
 
 $.is_debug = ($.isNode() ? process.env.IS_DEBUG : $.getdata("wedome_debug")) || "false";
 $.messages = [];
 
-const HOST = "https://scrm-b.zjian.net";
-const UA =
-    "Mozilla/5.0 (iPhone; CPU iPhone OS 26_1 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 MicroMessenger/8.0.74(0x18004a24) NetType/WIFI Language/zh_CN";
+// ============ openid 抓取(http-response minaLogin)============
 
-// ============ Cookie 抓取 ============
-
-function getCookie() {
+// minaLogin 登录响应里 data.member.openid 就是「公众号 openid」(loginByOpenid 用它,不是小程序 openid)
+function captureOpenid() {
     try {
-        const headers = lowerKeys($request.headers);
-        const token = headers["buyer-token"] || "";
-        const brandId = headers["brandid"] || "";
-
-        // buyer-token 在签到页所有接口(get / getMyPointInfo 等)上都有,
-        // 进页面即可抓,无需点签到。activityId/memberId 在 cron 时现取。
-        if (!token) {
-            $.log("[WARN] 未抓到 buyer-token,跳过");
+        const raw = typeof $response !== "undefined" && $response.body ? $response.body : "";
+        if (!raw) {
+            $.log("[capture] 无响应体(确认挂 http-response 且 requires-body=true)");
             return;
         }
-        if (token === $.getdata(CK_TOKEN)) {
-            $.log("[INFO] buyer-token 未变化");
+        const j = JSON.parse(raw);
+        const openid = j && j.data && j.data.member && j.data.member.openid;
+        $.log(`[capture] 触发 minaLogin  openid=${openid ? "有" : "无"}`);
+        if (!openid) {
+            $.log("[capture] 响应里没 member.openid,可能不是 minaLogin 接口");
             return;
         }
-
-        $.setdata(token, CK_TOKEN);
-        if (brandId) $.setdata(brandId, CK_BRAND);
-
-        $.msg($.name, "🎉 Token 已抓取", "可关闭抓包,主脚本自动签到");
+        if (openid === $.getdata(CK_OPENID)) {
+            $.log("[capture] openid 未变化");
+            return;
+        }
+        $.setdata(openid, CK_OPENID);
+        $.msg($.name, "✅ 味多美 openid 已获取", "可关掉小程序,cron 自动签到(openid 永久有效,无需再抓)");
     } catch (e) {
-        $.log(`[ERROR] cookie 抓取异常: ${e}`);
+        $.log(`[ERROR] openid 抓取异常: ${e}`);
     }
 }
 
-// ============ 业务 ============
-
-function commonHeaders() {
-    return {
-        "buyer-token": $.token,
-        brandId: $.brandId,
-        "content-type": "application/json",
-        "User-Agent": UA,
-        Referer: "https://servicewechat.com/wxbf56db97c9390bb0/25/page-frame.html",
-    };
-}
+// ============ 签到(openid 换 token → 取活动 → 签到)============
 
 async function checkin() {
-    // 1) 活动信息 → activityId(签到页进入即调,token 宽容)
-    const act = await request("POST", "/api/marketing/pointSignInActivitySet/get", null);
+    const openid = ($.isNode() ? process.env.WEDOME_OPENID : $.getdata(CK_OPENID)) || "";
+    $.log(`[检测] 版本=${SCRIPT_VERSION}  openid=${openid ? openid.slice(0, 4) + "…" + openid.slice(-4) : "空"}`);
+    if (!openid) {
+        throw new Error(`[${SCRIPT_VERSION}] 未配置 openid,请先进味多美小程序签到页抓取(或 BoxJS 填 wedome_openid)`);
+    }
+
+    // 1) 公众号 openid 换 buyer-token(绕开 wx.login,免续期)+ 拿 memberId
+    const login = await api("GET", `/api/member/h5/loginByOpenid?openid=${encodeURIComponent(openid)}&brandId=${BRAND_ID}`, null);
+    debug(login, "loginByOpenid");
+    const token = login && login.data && login.data.token;
+    const memberId = login && login.data && login.data.memberId;
+    if (!token || !memberId) {
+        throw new Error(`[${SCRIPT_VERSION}] loginByOpenid 失败(openid 失效?重进小程序重抓): ${$.toStr(login).slice(0, 160)}`);
+    }
+    $.log(`[登录] token 末6=${token.slice(-6)}  memberId=${memberId}`);
+
+    // 2) 取当前签到活动 → activityId
+    const act = await api("POST", "/api/marketing/pointSignInActivitySet/get", token);
     debug(act, "get");
     const activityId = act && act.data && act.data.id;
     if (!activityId) {
-        throw new Error(`取活动信息失败(buyer-token 可能失效): ${$.toStr(act)}`);
+        throw new Error(`[${SCRIPT_VERSION}] 取 activityId 失败: ${$.toStr(act).slice(0, 160)}`);
     }
 
-    // 2) 积分信息 → memberId(+ 余额)
-    const point = await request("GET", "/api/member/memberPoint/getMyPointInfo", null);
-    debug(point, "getMyPointInfo");
-    const memberId = point && point.data && point.data.memberId;
-    if (!memberId) {
-        throw new Error(`取 memberId 失败(buyer-token 可能失效): ${$.toStr(point)}`);
-    }
+    // 3) 签到:POST signInLog 即执行签到(幂等,已签返回当天已有记录)
+    const sign = await api("POST", `/api/marketing/pointSignInActivitySet/signInLog?activityId=${activityId}&memberId=${memberId}`, token);
+    debug(sign, "signInLog");
+    $.log(`[响应] ${$.toStr(sign).slice(0, 200)}`);
 
-    // 3) 签到(memberName 非必需,服务端按 activityId+memberId 判定;index 为周期内天序,固定 1)
-    const res = await request("POST", "/api/marketing/pointSignInActivitySet/signIn", {
-        activityId,
-        memberId,
-        index: 1,
-    });
-    debug(res, "signIn");
-
-    let signLine;
-    if (res && res.ok === true) {
-        signLine = "✅ 签到成功 (+2 积分)";
-    } else if (res && res.result !== undefined) {
-        signLine = "✨ 今日已签到";
+    const tag = `[${SCRIPT_VERSION}]`;
+    if (sign && sign.result === 0 && sign.data && sign.data.createTime) {
+        const signedToday = sign.data.createTime.slice(0, 10) === today();
+        $.messages.push(signedToday ? `✅ 签到成功 (+2 积分),第 ${sign.data.index || "?"} 天` : "✨ 今日已签到");
+    } else if (sign && /已签|already|repeat|重复/i.test($.toStr(sign))) {
+        $.messages.push("✨ 今日已签到");
     } else {
-        signLine = "❌ 签到失败: " + $.toStr(res);
+        $.messages.push(`${tag} ❌ 签到失败: ${sign ? $.toStr(sign).slice(0, 160) : "无响应"}`);
     }
 
-    // 用 signInLog 核对今天是否确实有签到记录
-    const logRes = await request(
-        "POST",
-        `/api/marketing/pointSignInActivitySet/signInLog?activityId=${activityId}&memberId=${memberId}`,
-        null
-    );
-    debug(logRes, "signInLog");
-    const t = logRes && logRes.data && logRes.data.createTime;
-    if (t && t.slice(0, 10) !== today()) {
-        signLine += "\n⚠️ 今日暂无签到记录,请检查";
-    }
-    $.messages.push(signLine);
-
-    if (point.data && typeof point.data.point === "number") {
+    // 4) 积分余额(可选展示)
+    const point = await api("GET", "/api/member/memberPoint/getMyPointInfo", token);
+    debug(point, "getMyPointInfo");
+    if (point && point.data && typeof point.data.point === "number") {
         $.messages.push(`💰 当前积分: ${point.data.point}`);
     }
 }
 
 // ============ 请求 ============
 
-function request(method, path, body) {
+function api(method, path, token, body) {
     return new Promise((resolve) => {
-        const opts = { url: `${HOST}${path}`, headers: commonHeaders() };
-        if (method === "POST" && body) opts.body = typeof body === "string" ? body : JSON.stringify(body);
-
-        debug({ method, url: opts.url, body: opts.body }, `${method} request`);
+        const headers = {
+            brandId: BRAND_ID,
+            "content-type": "application/json",
+            "User-Agent": UA,
+            Referer: REFERER,
+        };
+        if (token) headers["buyer-token"] = token;
+        const opts = { url: BASE + path, headers };
+        if (method === "POST") opts.body = body ? JSON.stringify(body) : "";
 
         const fn = method === "POST" ? $.post : $.get;
         fn.call($, opts, (err, resp, data) => {
             if (err) {
-                $.log(`[ERROR] ${method} ${path}: ${$.toStr(err)}`);
-                resolve(null);
-                return;
+                $.log(`[ERROR] ${method} ${path.split("?")[0]}: ${$.toStr(err)}`);
+                return resolve(null);
             }
             try {
                 resolve(typeof data === "string" ? JSON.parse(data) : data);
             } catch (e) {
-                $.log(`[ERROR] 响应解析失败: ${(data || "").substring(0, 300)}`);
+                $.log(`[ERROR] 响应解析失败: ${(data || "").slice(0, 300)}`);
                 resolve(null);
             }
         });
@@ -184,11 +175,6 @@ function request(method, path, body) {
 }
 
 // ============ 工具 ============
-
-function lowerKeys(obj) {
-    if (!obj) return {};
-    return Object.fromEntries(Object.entries(obj).map(([k, v]) => [k.toLowerCase(), v]));
-}
 
 function today() {
     const d = new Date(Date.now() + 8 * 3600 * 1000); // 东八区
@@ -204,31 +190,16 @@ function debug(content, title = "debug") {
 
 async function sendMsg(message) {
     if (!message) return;
-    if ($.isNode()) {
-        try {
-            const notify = require("./sendNotify");
-            await notify.sendNotify($.name, message);
-        } catch (e) {
-            $.log(`\n${$.name}\n${message}`);
-        }
-    } else {
-        $.msg($.name, "", message);
-    }
+    $.msg($.name, "", message);
 }
 
 // ============ 入口 ============
 
-if (typeof $request !== "undefined") {
-    getCookie();
+if (typeof $response !== "undefined") {
+    captureOpenid();
     $.done();
 } else {
     (async () => {
-        $.token = $.isNode() ? process.env.WEDOME_TOKEN : $.getdata(CK_TOKEN);
-        $.brandId = ($.isNode() ? process.env.WEDOME_BRANDID : $.getdata(CK_BRAND)) || "";
-
-        if (!$.token) {
-            throw new Error("未配置 buyer-token,请先进小程序签到页抓取(进页面即可,无需点签到)");
-        }
         await checkin();
     })()
         .catch((e) => {

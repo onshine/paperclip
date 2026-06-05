@@ -438,12 +438,18 @@
       "id": "paperclip.wedome",
       "name": "味多美",
       "keys": [
-        "wedome_token",
-        "wedome_brandid",
-        "wedome_body",
+        "wedome_openid",
         "wedome_debug"
       ],
       "settings": [
+        {
+          "id": "wedome_openid",
+          "name": "公众号 openid",
+          "val": "",
+          "type": "text",
+          "placeholder": "进小程序自动抓,或手填",
+          "desc": "味多美公众号 openid(永久固定);留空则靠抓取自动写入"
+        },
         {
           "id": "wedome_debug",
           "name": "调试模式",
@@ -453,7 +459,7 @@
             { "key": "false", "label": "关闭" },
             { "key": "true",  "label": "开启" }
           ],
-          "desc": "开启后打印签到请求体和响应"
+          "desc": "开启后打印 loginByOpenid / 签到响应"
         }
       ],
       "author": "@MaYIHEI",
