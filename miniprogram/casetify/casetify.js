@@ -47,6 +47,9 @@
  */
 
 const $ = new Env("CASETiFY");
+
+const SCRIPT_VERSION = "2026-05-31.r1"; // 改一次 +1,确认拉到最新版
+$.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
 const CK_NAME = "casetify_token";
 $.token = ($.isNode() ? process.env.CASETIFY_TOKEN : $.getdata(CK_NAME)) || "";
 $.messages = [];

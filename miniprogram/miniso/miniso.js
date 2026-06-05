@@ -51,6 +51,9 @@
 
 const $ = new Env('名创优品');
 
+const SCRIPT_VERSION = "2026-05-24.r1"; // 改一次 +1,确认拉到最新版
+$.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
+
 const CK_NAME = 'miniso_data';
 const SALT = 'ffe232&t%4df!67sx55eas';
 const ACTIVITY_ID = '18';

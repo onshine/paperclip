@@ -6,7 +6,7 @@
  * @Author: @Evilbutcher (https://github.com/evilbutcher) / @toulanboy (https://github.com/toulanboy/scripts)
  * @Modifier: MaYIHEI <https://github.com/MaYIHEI/paperclip>
  * @Channel: Telegram 频道 https://t.me/mayihei
- * @Updated: 2026-05-11b
+ * @Updated: 2026-05-11
  *
  * ===== Loon =====
  * [MITM]
@@ -51,6 +51,9 @@
  */
 
 const $ = new Env("微博超话");
+
+const SCRIPT_VERSION = "2026-05-11.r1"; // 改一次 +1,确认拉到最新版
+$.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
 
 $.delete_cookie = false;
 $.msg_max_num = 30;

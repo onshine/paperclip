@@ -51,6 +51,9 @@
 
 const $ = new Env("一点万象");
 
+const SCRIPT_VERSION = "2026-05-23.r1"; // 改一次 +1,确认拉到最新版
+$.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
+
 const CK_KEY = 'newmixc_data';
 const SALT = 'P@Gkbu0shTNHjhM!7F';            // H5 包 signIn 章节挖出的盐
 const APP_ID = '68a91a5bac6a4f3e91bf4b42856785c6';  // H5 端 appId (常量 d)

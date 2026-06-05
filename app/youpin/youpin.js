@@ -51,6 +51,9 @@
 
 const $ = new Env("小米有品");
 
+const SCRIPT_VERSION = "2026-05-27.r1"; // 改一次 +1,确认拉到最新版
+$.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
+
 const CK_KEY  = 'youpin_data';
 const BASE    = 'https://m.xiaomiyoupin.com';
 // 每日签到活动 ID（channelId，固定值，Xiaomi 更新活动后可能变）

@@ -52,6 +52,9 @@
 
 const $ = new Env("米游社");
 
+const SCRIPT_VERSION = "2026-05-23.r1"; // 改一次 +1,确认拉到最新版
+$.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
+
 $.delete_cookie = false;
 $.req_interval = 2000;
 $.debug = false;

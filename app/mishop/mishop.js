@@ -47,6 +47,9 @@
 
 const $ = new Env('小米商城');
 
+const SCRIPT_VERSION = "2026-05-27.r1"; // 改一次 +1,确认拉到最新版
+$.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
+
 const CK_KEY = 'mishop_data';
 const API = 'https://shop-api.retail.mi.com';
 

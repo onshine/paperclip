@@ -51,6 +51,9 @@
 
 const $ = new Env("笔笔省");
 
+const SCRIPT_VERSION = "2026-05-12.r1"; // 改一次 +1,确认拉到最新版
+$.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
+
 // 存储 key
 const KEY_TOKEN = 'bbs_session_token';
 const KEY_APPID = 'bbs_appid';

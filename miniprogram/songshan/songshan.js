@@ -51,6 +51,9 @@
 
 const $ = new Env("松山棉店");
 
+const SCRIPT_VERSION = "2026-06-04.r1"; // 改一次 +1,确认拉到最新版
+$.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
+
 const CK_HEADERS = "songshan_headers"; // 签到请求头(JSON)
 const CK_BODY = "songshan_body";       // 签到请求体(原样)
 

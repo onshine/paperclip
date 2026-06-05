@@ -50,6 +50,9 @@
  */
 
 const $ = new Env("龙德广场");
+
+const SCRIPT_VERSION = "2026-05-24.r1"; // 改一次 +1,确认拉到最新版
+$.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
 const CK_NAME = "longde_token";
 $.token = ($.isNode() ? process.env.LONGDE_TOKEN : $.getdata(CK_NAME)) || "";
 $.is_debug = ($.isNode() ? process.env.IS_DEBUG : $.getdata("is_debug")) || "false";

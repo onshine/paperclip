@@ -50,6 +50,9 @@
  *     interval: 86400
  */
 const $ = new Env("泡泡玛特");
+
+const SCRIPT_VERSION = "2026-05-11.r1"; // 改一次 +1,确认拉到最新版
+$.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
 const ckName = "ppmt_data";
 const userCookie = $.toObj($.isNode() ? process.env[ckName] : $.getdata(ckName)) || [];
 $.userIdx = 0, $.userList = [], $.notifyMsg = [];

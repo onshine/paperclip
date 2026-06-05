@@ -50,6 +50,9 @@
  *     interval: 86400
  */
 const $ = new Env("海底捞");
+
+const SCRIPT_VERSION = "2026-05-24.r1"; // 改一次 +1,确认拉到最新版
+$.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
 const ckName = "hdl_data";
 const Notify = 1;
 const notify = $.isNode() ? require('./sendNotify') : '';

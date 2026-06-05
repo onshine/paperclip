@@ -51,6 +51,9 @@
 
 const $ = new Env("味多美");
 
+const SCRIPT_VERSION = "2026-05-31.r1"; // 改一次 +1,确认拉到最新版
+$.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
+
 const CK_TOKEN = "wedome_token";   // buyer-token
 const CK_BRAND = "wedome_brandid"; // brandId 请求头
 

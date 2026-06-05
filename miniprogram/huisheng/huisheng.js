@@ -51,6 +51,9 @@
 
 const $ = new Env("惠省红包墙");
 
+const SCRIPT_VERSION = "2026-05-18.r1"; // 改一次 +1,确认拉到最新版
+$.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
+
 $.delete_cookie = false;
 $.debug = false;
 $.req_interval = 500;

@@ -50,6 +50,9 @@
  */
 
 const $ = new Env('龙湖天街');
+
+const SCRIPT_VERSION = "2026-05-24.r1"; // 改一次 +1,确认拉到最新版
+$.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
 const CK_KEY = 'lhtj_headers';
 const ACTIVITY_NO = '11111111111686241863606037740000';
 const SIGN_URL = 'https://gw2c-hw-open.longfor.com/lmarketing-task-api-mvc-prod/openapi/task/v1/signature/clock';

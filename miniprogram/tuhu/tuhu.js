@@ -52,6 +52,9 @@
  */
 
 const $ = new Env('途虎养车');
+
+const SCRIPT_VERSION = "2026-05-08.r1"; // 改一次 +1,确认拉到最新版
+$.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
 $.is_debug = ($.isNode() ? process.env['IS_DEDUG'] : $.getdata('is_debug')) || 'false';  // 调试模式
 $.token = ($.isNode() ? process.env['TUHU_TOKEN'] : $.getdata('tuhu_token')) || '';  // Token
 $.blackbox = ($.isNode() ? process.env['TUHU_BLACKBOX'] : $.getdata('tuhu_blackbox')) || 'kMPSQ1710898198mf9JVT5oKB5';  // blackbox
