@@ -78,6 +78,13 @@ script-providers:
     interval: 86400
 ```
 
+## 实现细节
+
+- **抓取**:http-response 模式,匹配 `svip_lite/user_info`(进「我的」页自动触发)+ `wechat_message/template_info`,`require-body` 解响应体
+- **鉴权**:`PopVip-Auth: Bearer <JWT>`(老版用 `identity_code`,v5.13.8 起改为 JWT)
+- **user_id / phone 从 JWT payload 解**:新版接口不再回传这些字段,取 token 第二段 base64url 解码后从 payload 取
+- **默认头像**:接口不返回头像时,写死 pin 仓库的 `ppmt.png` 兜底
+
 ## 维护记录
 
 | 日期 | 变更 |
