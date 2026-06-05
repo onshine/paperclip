@@ -319,16 +319,20 @@
       "id": "paperclip.tenvideo",
       "name": "腾讯视频",
       "keys": [
-        "txspCookie",
-        "isSkipTxspCheckIn"
+        "tenvideo_cookie",
+        "tenvideo_debug"
       ],
       "settings": [
         {
-          "id": "isSkipTxspCheckIn",
-          "name": "跳过签到",
-          "val": false,
-          "type": "boolean",
-          "desc": "设为开启后,不再执行 VIP 签到(仅保留 cookie 抓取)"
+          "id": "tenvideo_debug",
+          "name": "调试模式",
+          "val": "false",
+          "type": "selects",
+          "items": [
+            { "key": "false", "label": "关闭" },
+            { "key": "true",  "label": "开启" }
+          ],
+          "desc": "开启后打印 Account/Refresh 与签到响应"
         }
       ],
       "author": "@WowYiJiu, 精简 + 适配新接口 @MaYIHEI",
@@ -487,6 +491,107 @@
       "icons": [
         "https://raw.githubusercontent.com/MaYIHEI/pin/main/app/topsports.png",
         "https://raw.githubusercontent.com/MaYIHEI/pin/main/app/topsports.png"
+      ]
+    },
+
+    {
+      "id": "paperclip.mishop",
+      "name": "小米商城",
+      "keys": [
+        "mishop_data"
+      ],
+      "settings": [],
+      "author": "@MaYIHEI",
+      "repo": "https://github.com/MaYIHEI/paperclip/tree/main/app/mishop",
+      "script": "https://raw.githubusercontent.com/MaYIHEI/paperclip/main/app/mishop/mishop.js",
+      "scripts": [
+        {
+          "name": "主签到",
+          "script": "https://raw.githubusercontent.com/MaYIHEI/paperclip/main/app/mishop/mishop.js"
+        },
+        {
+          "name": "抓 Cookie",
+          "script": "https://raw.githubusercontent.com/MaYIHEI/paperclip/main/app/mishop/mishop.cookie.js"
+        }
+      ],
+      "icons": [
+        "https://raw.githubusercontent.com/MaYIHEI/pin/main/app/mishop.png",
+        "https://raw.githubusercontent.com/MaYIHEI/pin/main/app/mishop.png"
+      ]
+    },
+
+    {
+      "id": "paperclip.youpin",
+      "name": "小米有品",
+      "keys": [
+        "youpin_data"
+      ],
+      "settings": [],
+      "author": "@MaYIHEI",
+      "repo": "https://github.com/MaYIHEI/paperclip/tree/main/app/youpin",
+      "script": "https://raw.githubusercontent.com/MaYIHEI/paperclip/main/app/youpin/youpin.js",
+      "icons": [
+        "https://raw.githubusercontent.com/MaYIHEI/pin/main/app/youpin.png",
+        "https://raw.githubusercontent.com/MaYIHEI/pin/main/app/youpin.png"
+      ]
+    },
+
+    {
+      "id": "paperclip.teld",
+      "name": "特来电",
+      "keys": [
+        "teld_auth",
+        "teld_debug"
+      ],
+      "settings": [
+        {
+          "id": "teld_debug",
+          "name": "调试模式",
+          "val": "false",
+          "type": "selects",
+          "items": [
+            { "key": "false", "label": "关闭" },
+            { "key": "true",  "label": "开启" }
+          ],
+          "desc": "开启后打印抓取/续期/请求参数/响应日志"
+        }
+      ],
+      "author": "@MaYIHEI",
+      "repo": "https://github.com/MaYIHEI/paperclip/tree/main/miniprogram/teld",
+      "script": "https://raw.githubusercontent.com/MaYIHEI/paperclip/main/miniprogram/teld/teld.js",
+      "icons": [
+        "https://raw.githubusercontent.com/MaYIHEI/pin/main/app/teld.png",
+        "https://raw.githubusercontent.com/MaYIHEI/pin/main/app/teld.png"
+      ]
+    },
+
+    {
+      "id": "paperclip.lvcchong",
+      "name": "驴充充",
+      "keys": [
+        "lvcchong_auth",
+        "lvcchong_debug",
+        "lvcchong_notify_ts"
+      ],
+      "settings": [
+        {
+          "id": "lvcchong_debug",
+          "name": "调试模式",
+          "val": "false",
+          "type": "selects",
+          "items": [
+            { "key": "false", "label": "关闭" },
+            { "key": "true",  "label": "开启" }
+          ],
+          "desc": "开启后打印详细日志(脚本已归档)"
+        }
+      ],
+      "author": "@MaYIHEI",
+      "repo": "https://github.com/MaYIHEI/paperclip/tree/main/app/lvcchong",
+      "script": "https://raw.githubusercontent.com/MaYIHEI/paperclip/main/app/lvcchong/lvcchong.js",
+      "icons": [
+        "https://raw.githubusercontent.com/MaYIHEI/pin/main/app/lvcchong.png",
+        "https://raw.githubusercontent.com/MaYIHEI/pin/main/app/lvcchong.png"
       ]
     }
 
