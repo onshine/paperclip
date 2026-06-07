@@ -52,7 +52,7 @@
 
 const $ = new Env("味多美");
 
-const SCRIPT_VERSION = "2026-06-07.r1"; // 改一次 +1,确认拉到最新版
+const SCRIPT_VERSION = "2026-06-07.r2"; // 改一次 +1,确认拉到最新版
 $.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
 
 const CK_OPENID = "wedome_openid"; // 公众号 openid(永久固定),抓取写入,也可 BoxJS 手填
@@ -148,9 +148,6 @@ async function checkin() {
         // 新格式 ok:true,或旧格式带 createTime
         const idx = (sign.data && sign.data.index) || "?";
         $.messages.push(`✅ 签到成功 (+2 积分),第 ${idx} 天`);
-    } else if (sign && sign.result === 0 && sign.ok === false) {
-        // 服务端返回 ok:false — 通常表示今日已签到(幂等);若 App 内未见记录说明接口格式又变了需重抓
-        $.messages.push("✨ 今日已签到");
     } else if (sign && /已签|already|repeat|重复/i.test($.toStr(sign))) {
         $.messages.push("✨ 今日已签到");
     } else {
