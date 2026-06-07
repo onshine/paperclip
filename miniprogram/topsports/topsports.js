@@ -1,8 +1,11 @@
 /**
- * 滔搏运动 · 每日签到(每日中心签到领积分)
+ * 滔搏运动 · 每日签到(每日中心签到领积分)  [📦 已归档]
+ *
+ * 归档原因:Authorization(小程序 Bearer)~1h + QZ_SID(H5 公众号 OAuth)< 1 天,
+ *           两道 auth 均依赖微信前台交互续命,纯后台 cron 无解。
  *
  * 抓取:首次进「每日中心」页完整抓 Cookie;此后开小程序任意页即自动刷新 Authorization
- *       微信内打开任意滔搏 H5 链接 → 自动捕获 QZ_SID(H5 会话,有效期远长于 1 小时)
+ *       微信内打开任意滔搏 H5 链接 → 自动捕获 QZ_SID(H5 会话)
  * 签到:cron 定时自动签到;Authorization 失效时自动降级到 H5 会话(QZ_SID)
  *
  * @Author: MaYIHEI <https://github.com/MaYIHEI/paperclip>

@@ -4,9 +4,9 @@
 
 # 滔搏
 
-> 🧪 **待验证**
+> 📦 **已归档** · Authorization(微信小程序会话)服务端 TTL ~1 小时;QZ_SID(H5 公众号 OAuth)实测 < 1 天即失效。两道 auth 均无法撑过 24 小时,每日定时签到无解。
 
-滔搏运动(Topsports)微信小程序「每日中心」签到送积分。Authorization 1 小时服务端过期;有效期内自动签到,过期后降级到 H5 会话(QZ_SID)。
+滔搏运动(Topsports)微信小程序「每日中心」签到送积分。
 
 ## 文件
 
@@ -111,3 +111,13 @@ script-providers:
 | 2026-06-02 | 确诊 doSign 50010 真因：Authorization 轮换；refreshAcwTc() 处理 acw_tc |
 | 2026-06-06 | 增加 `wxmall.topsports.com.cn/shopMember/` 重写，开 app 自动刷新 Authorization，脚本复活 |
 | 2026-06-06 | 增加 H5 会话(QZ_SID)捕获与降级路径；Authorization 1 小时过期后自动切 H5 会话重试 |
+| 2026-06-07 | 实测 QZ_SID < 1 天即失效，两道 auth 均无法撑过 24 小时 → 📦 归档 |
+
+## 归档原因
+
+| auth | TTL | 结论 |
+|---|---|---|
+| Authorization(小程序 Bearer) | ~1 小时 | 每次开小程序才刷新，无感 cron 不可用 |
+| QZ_SID(H5 公众号 OAuth) | < 1 天 | 实测隔天失效，无法保证每日自动签到 |
+
+两道 auth 都短于 24 小时，且均依赖微信前台交互才能续命；纯后台 cron 无法维持登录态。
