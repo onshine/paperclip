@@ -6,7 +6,7 @@
  *
  * @Author: MaYIHEI <https://github.com/MaYIHEI/paperclip>
  * @Channel: Telegram 频道 https://t.me/mayihei
- * @Updated: 2026-06-07 r3
+ * @Updated: 2026-06-07
  *
  * ===== Loon =====
  * [MITM]
@@ -95,7 +95,7 @@ function captureOpenid() {
         // member/find 响应同时带 name,signIn body 需要
         const mname = j.data.member.name || "";
         if (mname) $.setdata(mname, CK_NAME);
-        $.msg($.name, "✅ 味多美 openid 已获取", "可关掉小程序,cron 自动签到(openid 永久有效,无需再抓)");
+        $.msg($.name, "✅ 味多美 Cookie 获取成功", "openid 永久有效,无需再抓,cron 自动签到");
     } catch (e) {
         $.log(`[ERROR] openid 抓取异常: ${e}`);
     }
