@@ -52,7 +52,7 @@
 
 const $ = new Env('龙湖天街 App');
 
-const SCRIPT_VERSION = "2026-06-10.r4"; // 改一次 +1,确认拉到最新版
+const SCRIPT_VERSION = "2026-06-10.r5"; // 改一次 +1,确认拉到最新版
 $.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
 
 // ── 持久化 key ──
@@ -76,6 +76,7 @@ const SIGN_GAIA = 'c06753f1-3e68-437d-b592-b94656ea5517';     // 签到网关 ke
 const LOTTERY_GAIA = '2f9e3889-91d9-4684-8ff5-24d881438eaf';  // 抽奖网关 key(固定)
 const UA_FALLBACK = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148';
 const MAX_DRAW = 10; // 抽奖循环上限,防御性
+const REQ_TIMEOUT = 10000; // 请求超时(ms),避免 cron 卡死占用代理
 
 const DEBUG = ($.getdata(DEBUG_KEY) || 'false') === 'true';
 function dlog(...a) { if (DEBUG) $.log('[DEBUG]', ...a); }
@@ -233,6 +234,7 @@ function sign(auth) {
       url: CLOCK_URL,
       headers: signHeaders(auth),
       body: JSON.stringify({ activity_no: SIGN_ACTIVITY_NO }),
+      timeout: REQ_TIMEOUT,
     };
     $.post(opts, (err, resp, body) => {
       try {
@@ -302,6 +304,7 @@ function lotteryPost(auth, path, payload) {
       url: `${LOTTERY_BASE}${path}`,
       headers: lotteryHeaders(auth, true),
       body: JSON.stringify(payload),
+      timeout: REQ_TIMEOUT,
     }, (err, resp, body) => {
       if (err) return resolve({ err });
       try { resolve({ data: typeof body === 'string' ? JSON.parse(body) : body, raw: body }); }
@@ -316,6 +319,7 @@ function getChance(auth) {
     $.get({
       url: `${LOTTERY_BASE}/auth/lottery/chance${q}`,
       headers: lotteryHeaders(auth, false),
+      timeout: REQ_TIMEOUT,
     }, (err, resp, body) => {
       if (err) return resolve(0);
       try {
