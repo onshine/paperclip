@@ -129,7 +129,7 @@ function urlEncodeUnicode(s) {
 // ========== 签到逻辑 ==========
 const $ = new Env('万达电影');
 
-const SCRIPT_VERSION = '2026-06-10.r2'; // 全自包含:签名引擎内嵌,无需 Worker/VPS
+const SCRIPT_VERSION = '2026-06-10.r3'; // 去掉请求里的 timeout(Loon 误判为 ms 致秒超时)
 $.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
 
 const CK_KEY = 'wanda_data';
@@ -245,7 +245,7 @@ function doSign(ck, ts, check, bodyStr) {
             'X-RY-USER': ck.user,
         };
         if (ck.shumei) headers['ShumeiBoxId'] = ck.shumei;
-        $.post({ url: API + SIGN_URI, timeout: 20, headers, body: bodyStr }, (err, resp, data) => {
+        $.post({ url: API + SIGN_URI, headers, body: bodyStr }, (err, resp, data) => {
             if (err) { $.log(`[doSign] 错误: ${JSON.stringify(err)}`); resolve(null); return; }
             try { resolve(JSON.parse(data)); }
             catch (e) {

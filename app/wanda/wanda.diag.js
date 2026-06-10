@@ -59,7 +59,7 @@ const URI = '/sign_in/do_sign_in.api';
 function probe(name, method, url, headers, body) {
     const t0 = Date.now();
     return new Promise((resolve) => {
-        const opts = { url, timeout: 12, headers: headers || {} };
+        const opts = { url, headers: headers || {} };
         if (body != null) opts.body = body;
         const cb = (err, resp, data) => {
             const ms = Date.now() - t0;
