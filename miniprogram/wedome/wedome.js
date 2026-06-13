@@ -52,7 +52,7 @@
 
 const $ = new Env("味多美");
 
-const SCRIPT_VERSION = "2026-06-13.r6"; // 改一次 +1,确认拉到最新版
+const SCRIPT_VERSION = "2026-06-13.r7"; // 改一次 +1,确认拉到最新版
 $.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
 
 const CK_OPENID = "wedome_openid";      // 公众号 openid(永久固定)
@@ -153,12 +153,21 @@ async function checkin() {
     // 并不代表真签到过 —— 旧版据此判「今日已签到」直接 return,导致从来没真正签到。
     // 因此不再用 signInLog 短路,始终走下面的 signIn,由 signIn 自己的返回判定成功 / 已签。
 
-    // 3b) 实际签到:POST signIn,body 必须含 memberName
-    const memberName = $.isNode()
+    // 3b) 实际签到:POST signIn,body 必须含 memberName(空则服务端返回 ok:false 拒签)
+    let memberName = $.isNode()
         ? (process.env.WEDOME_MEMBERNAME || "")
         : ($.getdata(CK_NAME) || "");
+    // 兜底:从 loginByOpenid 返回里捞会员名(字段名未知,多试几个),避免必须手动进小程序抓取
+    if (!memberName && login && login.data) {
+        const d = login.data;
+        memberName = d.memberName || d.name || d.nickName || d.nickname || (d.member && d.member.name) || "";
+        if (memberName) {
+            $.setdata(memberName, CK_NAME);
+            $.log(`[兜底] 从 loginByOpenid 取到 memberName=${memberName}`);
+        }
+    }
     if (!memberName) {
-        $.log("[WARN] 未存储 memberName,重进味多美小程序「我的」页触发 member/find 重抓即可");
+        $.log("[WARN] 仍无 memberName → signIn 大概率被拒;进一次味多美小程序「我的/会员」页触发 member/find 重抓");
     }
     const sign = await api("POST", "/api/marketing/pointSignInActivitySet/signIn", token, {
         activityId, memberId, memberName, index: 1,
@@ -166,15 +175,17 @@ async function checkin() {
     debug(sign, "signIn");
     $.log(`[签到] ${$.toStr(sign).slice(0, 300)}`);
 
+    // 成功标志是 ok===true,不是 result===0(实测失败时 result 也是 0,只有 ok 区分成败)
     const tag = `[${SCRIPT_VERSION}]`;
-    if (sign && sign.result === 0) {
+    if (sign && sign.ok === true) {
         $.setdata(activityId, CK_ACTID); // 记录本次 activityId,供下次对比
         const changedNote = actChanged ? " ⚠️ activityId 已变更" : "";
         $.messages.push(`✅ 签到成功 (+2 积分)${changedNote}`);
     } else if (sign && /已签|already|repeat|重复/i.test($.toStr(sign))) {
         $.messages.push("✨ 今日已签到");
     } else {
-        $.messages.push(`${tag} ❌ 签到失败: ${sign ? $.toStr(sign).slice(0, 160) : "无响应"}`);
+        const hint = memberName ? "" : "(memberName 为空,进味多美小程序「我的」页重抓)";
+        $.messages.push(`${tag} ❌ 签到失败${hint}: ${sign ? $.toStr(sign).slice(0, 200) : "无响应"}`);
     }
 
     // 4) 积分余额(可选展示)
