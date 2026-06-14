@@ -388,7 +388,7 @@ function getCookie() {
 
         const phone = (parseJWT(skey) || {}).PHONE || '';
         const masked = phone ? phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2') : openid.substring(0, 8) + '...';
-        $.msg($.name, '🎉 Cookie 更新成功', `账号: ${masked}`);
+        $.msg($.name, '✅ 名创优品 Cookie 获取成功', `账号: ${masked}`);
     } catch (e) {
         $.log(`❌ Cookie 抓取异常: ${e.message || e}`);
     }
