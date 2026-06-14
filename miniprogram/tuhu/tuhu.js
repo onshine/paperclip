@@ -263,7 +263,7 @@ function GetCookie() {
             $.tokenArr.push($.newToken);
             $.log(`开始新增用户数据 ${$.newToken}`);
             $.setdata($.toStr($.tokenArr), 'tuhu_token');
-            $.msg($.name, ``, `Token 获取成功。🎉`);
+            $.msg($.name, `✅ 途虎养车 Cookie 获取成功`, ``);
         } else {
             $.log(`无需更新 Token: ${$.newToken}`);
         }

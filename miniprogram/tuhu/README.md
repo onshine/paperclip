@@ -14,7 +14,7 @@
 
 1. 按下方对应平台配置,开启重写脚本 + cron
 2. 打开微信小程序「途虎养车」→ 进入「我的」或「积分中心」页面 → 触发 `GetMemberSignInInfoAsync` 或 `GetRightsList` 接口
-3. 收到 `✅ Token 获取成功` 或类似抓取成功通知
+3. 收到 `✅ 途虎养车 Cookie 获取成功` 通知即抓取成功
 4. cron 会按计划自动签到
 
 ## Loon
