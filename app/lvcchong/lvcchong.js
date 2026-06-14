@@ -314,7 +314,7 @@ function captureAuth() {
         $.setdata(String(Date.now()), "lvcchong_notify_ts");
         const full = auth.refreshToken && auth.phone && auth.userId;
         if (full) {
-            $.msg($.name, "✅ 驴充充 Cookie 已更新", "停 2 秒让它存到最新,然后立刻关 App");
+            $.msg($.name, "✅ 驴充充 Cookie 获取成功", "停 2 秒让它存到最新,然后立刻关 App");
         } else {
             $.msg($.name, "⏳ 驴充充 Cookie 还缺 " + missing(auth), "杀进程冷启 App + 进积分签到页");
         }
