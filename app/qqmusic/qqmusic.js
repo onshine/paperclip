@@ -53,7 +53,7 @@
 
 const $ = new Env("QQ音乐");
 
-const SCRIPT_VERSION = "2026-06-15.r4"; // 改一次 +1,确认拉到最新版
+const SCRIPT_VERSION = "2026-06-15.r5"; // 改一次 +1,确认拉到最新版
 $.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
 
 const CK_KEY = "qqmusic_data"; // { uin, authst, refresh_key, login_type, ts }
@@ -92,7 +92,7 @@ function getCookie() {
         }
 
         $.setjson({ uin, authst, refresh_key, login_type, ts: Date.now() }, CK_KEY);
-        $.msg($.name, "✅ QQ 音乐 Cookie 获取成功", "可关闭抓包,主脚本会自动续期并签到");
+        $.msg($.name, "✅ QQ音乐 Cookie 获取成功", "可关闭抓包,主脚本会自动续期并签到");
         $.log(`[INFO] 已保存 (uin=${uin}, authst…${authst.slice(-6)}, refresh_key${refresh_key ? "…" + refresh_key.slice(-6) : "(无)"}, loginType=${login_type})`);
     } catch (e) {
         $.log(`[ERROR] 抓取异常: ${e}`);
@@ -264,6 +264,12 @@ async function sendMsg(message) {
 
 if (typeof $request !== "undefined") {
     getCookie();
+    $.done();
+} else if (JSON.parse($.getdata("qqmusic_clear") || "false")) {
+    // BoxJS 一键清除 Cookie:清完自动复位开关
+    $.setdata("", CK_KEY);
+    $.setdata("false", "qqmusic_clear");
+    $.msg($.name, "", "✅ Cookie 已清除,请重新抓取");
     $.done();
 } else {
     (async () => {

@@ -101,7 +101,8 @@ script-providers:
 
 | key | 默认 | 说明 |
 |---|---|---|
-| `qqmusic_debug` | `false` | 打印请求/响应日志 |
+| `qqmusic_clear` | `false` | 一键清除已抓 Cookie,运行一次后自动复位 |
+| `qqmusic_debug` | `false` | 打印续期/签到请求与响应日志 |
 
 ## 已知限制
 

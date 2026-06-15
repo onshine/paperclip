@@ -588,6 +588,58 @@
       ]
     },
     {
+      "id": "paperclip.qqmusic",
+      "name": "QQ音乐",
+      "keys": [
+        "qqmusic_data",
+        "qqmusic_clear",
+        "qqmusic_debug"
+      ],
+      "settings": [
+        {
+          "id": "qqmusic_clear",
+          "name": "清除 Cookie",
+          "val": false,
+          "type": "boolean",
+          "desc": "设为开启后，运行一次签到脚本会清空已抓的 Cookie，完成后自动复位为关闭；之后重新抓取"
+        },
+        {
+          "id": "qqmusic_debug",
+          "name": "调试模式",
+          "val": "false",
+          "type": "selects",
+          "items": [
+            {
+              "key": "false",
+              "label": "关闭"
+            },
+            {
+              "key": "true",
+              "label": "开启"
+            }
+          ],
+          "desc": "开启后打印续期/签到请求与响应"
+        }
+      ],
+      "author": "@MaYIHEI",
+      "repo": "https://github.com/MaYIHEI/paperclip/tree/main/app/qqmusic",
+      "script": "https://raw.githubusercontent.com/MaYIHEI/paperclip/main/app/qqmusic/qqmusic.js",
+      "scripts": [
+        {
+          "name": "主签到",
+          "script": "https://raw.githubusercontent.com/MaYIHEI/paperclip/main/app/qqmusic/qqmusic.js"
+        },
+        {
+          "name": "抓 Cookie",
+          "script": "https://raw.githubusercontent.com/MaYIHEI/paperclip/main/app/qqmusic/qqmusic.js"
+        }
+      ],
+      "icons": [
+        "https://raw.githubusercontent.com/MaYIHEI/pin/main/app/qqmusic.png",
+        "https://raw.githubusercontent.com/MaYIHEI/pin/main/app/qqmusic.png"
+      ]
+    },
+    {
       "id": "paperclip.casetify",
       "name": "CASETiFY (已归档)",
       "keys": [
