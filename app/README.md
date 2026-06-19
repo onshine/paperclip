@@ -19,6 +19,7 @@
 | [`qqmusic/`](./qqmusic/) | QQ 音乐 - 绿钻成长值每日签到(免签名通道 + refresh_key 自动续期) | 🧪 待验证 |
 | [`wanda/`](./wanda/) | 万达电影 - 每日签到(成长值,签名引擎内嵌,无需 Worker) | 🧪 待验证 |
 | [`tingtingfm/`](./tingtingfm/) | 听听FM - 任务中心每日签到(成长值 + 金币) | 🧪 待验证 |
+| [`wps/`](./wps/) | WPS Office - 每日签到 + 福利中心(打卡/抽奖/试用申请/限量爆款) | 🧪 待验证 |
 | [`lvcchong/`](./lvcchong/) | 驴充充(充电桩) - 积分中心每日签到 | 📦 已归档 |
 
 ---
