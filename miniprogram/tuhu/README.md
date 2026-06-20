@@ -78,9 +78,7 @@ script-providers:
     interval: 86400
 ```
 
-## 实现细节
-
-### 可选环境变量
+## 可选环境变量
 
 | 变量名 | 说明 |
 |---|---|
@@ -94,7 +92,7 @@ script-providers:
 | 日期 | 变更 |
 |---|---|
 | 2025-09-27 | [@FoKit](https://github.com/FoKit) 原版,[@Sliverkiss](https://github.com/Sliverkiss) 修复 blackBox 参数 |
-| 2026-05-08 | 适配途虎小程序 v7.62.3: 原 `/User/GetInternalCenterInfo` 接口已下线,改为从 `/User/GetMemberSignInInfoAsync` 或 `/User/GetRightsList` 抓取 token |
+| 2026-05-08 | 适配途虎小程序 v7.62.3:原 token 抓取接口下线,改从「我的/积分中心」页抓取 |
 
 ## 已知限制
 

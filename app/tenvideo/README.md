@@ -85,21 +85,12 @@ script-providers:
     interval: 86400
 ```
 
-## 实现细节
-
-- **续期(关键)** — vusession 仅 ~2 小时;cron 先 `POST pbaccess.video.qq.com/trpc.anywhere_door.account.Account/Refresh?vplatform=5`,body `{vuid, vusession, vurefresh:<refresh_token>}`(全取自 cookie),换新 vusession。**免 qimei、免 q_uskey 签名**,纯字段重放。比网页的 `WebLoginTrpc/NewRefresh` 通用(NewRefresh 还需 `si.h38=_qimei_uuid42`,小程序 cookie 里没有,会 `errcode:1002 input invalid`)
-- **vusession 取自响应** — `data.vusession`(或根级);写回 cookie 的 `v_vusession`/`vqq_vusession`;若响应带新 `vurefresh`/`refresh_token` 则滚动写回;并合并 `Set-Cookie`
-- **签到** — `GET vip.video.qq.com/rpc/trpc.new_task_system.task_system.TaskSystem/CheckIn?rpc_data={}`,带刷新后的 cookie。`ret===0`+`check_in_score` 为成功,`ret===-2002` 为今日已签
-- **抓取(两端通用)** — 登录态下 `pbaccess.video.qq.com` 的请求带 Cookie 头(`vqq_refresh_token`/`vqq_vuserid`/`vqq_vusession` 等);**网页和「腾讯视频」微信小程序都走这个域、都带这套 cookie**,故同一条抓取规则通吃(小程序在 iOS 微信里开即可,比网页省事)
-- **为何不用 app 原生** — app 端 vusession 续期是私有协议(wtlogin)复现不了;网页/小程序把 OAuth `refresh_token` 明文放 cookie,可重放
-
 ## 维护记录
 
 | 日期 | 变更 |
 |---|---|
-| — | 初版(@WowYiJiu):抓 app `ReadTaskList` cookie 回放签到,vusession 2h 靠手动续 |
-| 2026-06-05 | 复活:用 refresh_token 刷 vusession 再签到,无人值守。状态 📦→🧪 |
-| 2026-06-05 | 刷新改用 `Account/Refresh`(免 qimei,网页/小程序 cookie 通用),修小程序 cookie `input invalid`。**实测成功:`✅ 获得 10 V力值`** |
+| — | 初版(@WowYiJiu):抓 cookie 回放签到 |
+| 2026-06-05 | 复活:自动续期后再签到,无人值守。状态 📦→🧪。实测 `✅ 获得 10 V力值` |
 | 2026-06-10 | 多日实测稳定,🧪→✅ 维护中 |
 
 ## 已知限制

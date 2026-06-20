@@ -4,7 +4,7 @@
 
 # QQ 音乐
 
-> ✅ **维护中** · 续期 + 签到全链路稳定(`refresh_key` 换新 musickey 3 天有效 → 签到 `Ret:0`/`Ret:20019`),`refresh_key` 长期不变。
+> ✅ **维护中** · 续期 + 签到全链路稳定,凭据长期有效。
 
 QQ 音乐 App「我的 / 会员 / 每日签到」绿钻成长值每日签到。**一次抓取后挂着代理即可,cron 自动续期 + 签到,无需再开 App。**
 
@@ -18,23 +18,6 @@ QQ 音乐 App「我的 / 会员 / 每日签到」绿钻成长值每日签到。*
 2. 打开 QQ 音乐 App →「我的 → 会员中心」(进到会员中心首页即可,无需点签到)
 3. 收到 `✅ QQ 音乐 Cookie 获取成功` 通知即抓取成功(没弹就再进一次「每日签到」页)
 4. 之后挂着代理就行,cron 每天自动续期 + 签到,**无需再开 App**;只有手机关机 / 断代理超过 3 天才需重抓
-
-## 工作原理
-
-签到接口是 `music.lvz.MuFest13TaskSvr / EveryDaySignLvzScore`(绿钻成长值,`Cmd:get` 即领取)。
-
-**两个突破点都在解包 QQ 音乐微信小程序(`wxada7aab80ba27074`)里找到:**
-
-**① 免签名通道。** QQ 音乐 App 自己调 `musics.fcg`,带私有混淆签名 `sign`(`zzc…`),**重算不现实**。但小程序所有 CGI 都走 **`https://u.y.qq.com/cgi-bin/musicu.fcg`(无 sign)**,鉴权只靠请求体 `comm.authst`(就是 `qm_keyst` / musickey)。实测 App 抓的 `qm_keyst` 直接当 `authst` 即可跨通道认。
-
-**② 自动续期。** `qm_keyst`(musickey)**只有 3 天有效期**(`keyExpiresIn=259200`),这正是原脚本要天天进 App 的原因。但 Cookie 里的 `refresh_key` **长期不变**,可调 `music.login.LoginServer / Login` 换一把全新的 musickey(每次都换新值,3 天有效)。所以 cron 每天先续期、再签到,musickey 永远在有效期内滚动 —— 真后台,挂着就行。
-
-**流程:**
-- 抓取:从签到页 Cookie 取 `uin` + `qm_keyst` + `refresh_key` + `tmeLoginType`(**不要请求体 / sign / g_tk**)
-- 续期:cron 先 POST `musicu.fcg` 调 `LoginServer/Login`(`comm.tmeLoginType` + `param.refresh_key`),拿新 `musickey` 滚动存回
-- 签到:用刚续的 `authst` POST `musicu.fcg` 调 `EveryDaySignLvzScore`
-
-成败判断:`req_0.data.Ret === 0` 真签成功;`Ret === 20019`(「今天已经领取过」)= 今日已签;续期 `req1.code === 0` + 返回 `musickey` = 续期成功。
 
 ## Loon
 
@@ -106,14 +89,12 @@ script-providers:
 
 ## 已知限制
 
-- **`refresh_key` 的长期寿命未实测** —— 当前唯一的不确定点。实测 `refresh_key` 长期不变、`needRefreshKeyIn=0`(无临期信号),续期能无限换新 musickey;但它最终会不会过期(几个月?)需长期观察。一旦失效,续期会失败、签到报错,重进签到页重抓即可。
-- **手机关机 / 断代理超过 3 天**:musickey 过期且续期可能也需有效 musickey 配合,此时需重抓。日常挂着代理 + 每日 cron 不会触发。
-- **`tmeLoginType` 因号而异**:本脚本从 Cookie 自动读取(实测某 QQ 号为 `2`)。纯 QQ 登录(`1`)的续期未实测,若续期失败看日志 `req1.code`。
-- **签到走小程序 `appid`**:`comm.appid` 用 QQ 音乐小程序的 `wxada7aab80ba27074`,配 App 抓的 `qm_keyst` 实测照认。
+- **`refresh_key` 长期寿命未知**:实测长期不变、可无限续期,但最终会不会过期需长期观察。一旦失效,续期会失败、签到报错,重进签到页重抓即可。
+- **手机关机 / 断代理超过 3 天**:可能需要重抓。日常挂着代理 + 每日 cron 不会触发。
 
 ## 维护记录
 
 | 日期 | 变更 |
 |---|---|
-| 2026-06-15 | 初版。三版迭代:① 整包抓取+原样回放 → ② 解包小程序发现 `musicu.fcg` 免签名通道(只存 uin+qm_keyst)→ ③ 发现 musickey 仅 3 天有效但 `refresh_key` 可续期,加 cron 自动续期。全链路真 token 实测通(续期换新 key 3 天有效 → 签到 `Ret:20019`) |
-| 2026-06-15 | 抓取规则放宽:`musics.fcg?...EveryDaySignLvzScore`(匹配 query 中任意位置),进会员中心首页的合并请求即可触发,无需点进签到页 |
+| 2026-06-15 | 初版:绿钻成长值每日签到,musickey 自动续期,后台无需开 App |
+| 2026-06-15 | 抓取规则放宽:进会员中心首页即可触发,无需点进签到页 |

@@ -78,19 +78,12 @@ script-providers:
     interval: 86400
 ```
 
-## 实现细节
-
-- **抓头+体原样回放** — 微盟签到 body 含固定店铺/会员 ID 且无 body 签名,鉴权靠请求头 `x-wx-token`;抓取时存整套请求头(JSON)+ 请求体,cron 时 cleanHeaders 后 POST 到 `core/c/sign`
-- **进页面即抓** — 钩子匹配进页面就触发的 `signMainInfo` / `getActivityInfo`(body 与 `sign` 完全相同)及 `sign` 本身,任一触发即抓,**不依赖手动点签到**(避免「今日已签 → 抓不到」)
-- **cleanHeaders** — 剔除 `content-length` / `host` / `connection` / `accept-encoding` 及 HTTP/2 伪头(`:` 开头),其余原样转发
-- **签到判定** — 微盟 `errcode === "0"` 为成功,积分取 `data.fixedReward.points + data.extraReward.points`;`已签到` 文案识别为重复签到
-
 ## 维护记录
 
 | 日期 | 变更 |
 |---|---|
-| 2026-05-31 | 初版,抓签到请求头+体原样回放 |
-| 2026-06-01 | 抓取钩子改为页面加载的 `signMainInfo`(body 与 sign 相同),进页面即抓无需点签到 |
+| 2026-05-31 | 初版 |
+| 2026-06-01 | 抓取改为进签到页即触发,无需手动点签到 |
 | 2026-06-04 | 实测数日稳定可用,状态转 ✅ 维护中 |
 
 ## 已知限制

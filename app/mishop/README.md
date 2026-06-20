@@ -81,23 +81,11 @@ script-providers:
     interval: 86400
 ```
 
-## 实现细节
-
-- **接口**:`shop-api.retail.mi.com` 是小米商城 mtop 网关,所有 RN 页面的 API 都走这里
-- **签到流程两步**:
-  1. `POST /mtop/mf/act/infinite/do` body `[{}, {taskId, actId}]` → 拿 `taskToken`
-  2. `POST /mtop/mf/act/infinite/done` body `[{}, {taskToken, actId, taskType:110}]` → 领奖
-- **鉴权**:仅靠 cookie 里的 `serviceToken` + `userId`,无签名要求
-- **任务 ID 硬编码**:`actId` / `taskId` 是从 `/mtop/navi/venue/page?page_id=13880` 响应里挖出来的常量,`endTime` 到 2027 年,理论上很久不会变
-- **mtop 数组式 body**:body 是 `[{}, {payload}]` 两元素数组,第一个空对象是 header context 占位
-- **多 cookie 头**:Loon HTTP/2 合并多个 `cookie:` 头时残留脏前缀,用 `normalizeCookie()` 清理
-- **已签判断**:重复签到时 `do` 接口返回非 0 错误码,脚本据此识别"今日已签",无需独立的状态查询接口
-
 ## 维护记录
 
 | 日期 | 变更 |
 |---|---|
-| 2026-05-27 | 初版:两步 do/done 签到,mtop 数组式 body + normalizeCookie 处理多 cookie 头 |
+| 2026-05-27 | 初版 |
 
 ## 已知限制
 

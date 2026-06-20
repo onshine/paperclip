@@ -80,18 +80,11 @@ script-providers:
     interval: 86400
 ```
 
-## 实现细节
-
-- **与龙德广场同套后端** — 底层是芝麻科技(china-smartech)给商场做的 SaaS,域名/接口/签名算法与 `longde` 完全一致(同一份 `utils/signature.js`)
-- **签名算法本地复现** — `X-ZHIMA-SIGNATURE = HmacSHA256(url + JSON.stringify(body) + ts + nonce, JWT)`,纯 JS 实现无外部依赖
-- **mall_id 从抓取 URL 提取** — 华联是连锁,小程序内置几十家门店各自独立 mall_id;华联 JWT **不含 mall_id**,故抓取时从请求路径 `restful/mall/(\d+)/` 提取用户所选门店并随 token 存(键 `bhg_mallid`)
-- **会员体系账户级共享** — 与龙德广场同一会员钱包,签到状态与积分账户级共享,两者只需保留其一即可
-
 ## 维护记录
 
 | 日期 | 变更 |
 |---|---|
-| 2026-06-16 | 初版,复用龙德 china-smartech 通道,mall_id 改从抓取 URL 提取 |
+| 2026-06-16 | 初版 |
 
 ## 已知限制
 

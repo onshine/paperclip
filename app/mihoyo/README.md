@@ -80,19 +80,7 @@ script-providers:
     interval: 86400
 ```
 
-## 实现细节
-
-### 两类 cookie
-
-- **stoken cookie**:从米游社 BBS 接口的响应体抠角色列表(http-response + requires-body=1,绕开 DS 校验)
-- **web 签到 cookie**:luna 签到接口对 DS 校验宽松,web cookie 自然 30 天有效
-
-### 米游币任务说明
-
-2026-05 米哈游官方下线浏览/点赞/分享卡片,**只保留每日签到**。
-打卡接口是 v2 DS 重放检测,无解。本脚本只做签到。
-
-### BoxJS 参数
+## BoxJS 参数
 
 | key | 说明 |
 |---|---|

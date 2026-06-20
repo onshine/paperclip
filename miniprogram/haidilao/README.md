@@ -78,19 +78,12 @@ script-providers:
     interval: 86400
 ```
 
-## 实现细节
-
-- **抓取**:http-request 模式,匹配 `/activity/wxapp/signin/` 下所有接口(`query`/`querySite`/`querySwitch`/`queryFragment`/`signin`),进签到页即触发
-- **鉴权**:签到接口认 `_haidilao_app_token`(格式 `TOKEN_APP_xxx-xxx`),**原脚本抓错成 `Authorization`** 是失效主因
-- **无签名**:仅靠 token 鉴权,body 原样回放
-- **单脚本架构**:`$request` 存在时抓 token,不存在时 cron 签到
-
 ## 维护记录
 
 | 日期 | 变更 |
 |---|---|
 | - | 原作者 [@Sliverkiss](https://gist.github.com/Sliverkiss) 初版 |
-| 2026-05-13 | 修复 getCookie 抓错字段(`Authorization` → `_haidilao_app_token`),放宽重写匹配路径,适配 paperclip raw URL |
+| 2026-05-13 | 修复 Cookie 抓错字段,放宽重写匹配路径 |
 | 2026-05-24 | tag 统一为 `海底捞 Cookie` / `海底捞签到`,加 img-url 图标 |
 
 ## 已知限制

@@ -91,19 +91,6 @@ script-providers:
     interval: 86400
 ```
 
-## 实现细节
-
-- **一次抓取覆盖签到 + 抽奖**:同一份抓包里,签到接口的 `x-lf-usertoken`/`token` 与抽奖接口的 `authtoken` 是**同一个用户 token**,顶象 `x-lf-dxrisk-token` 也是同一个值跨这几个写操作通用。抓 clock 一处即可
-- **签到**(成长值/珑珠):`POST /lmarketing-task-api-mvc-prod/openapi/task/v1/signature/clock`,body `{activity_no: "1111…740000"}`。鉴权头 `x-lf-usertoken` + `token` + `x-gaia-api-key`(签到网关 `c06753f1-…`) + `x-lf-channel: L0` + `x-lf-bu-code: L00602` + 顶象三件套(`dxrisk-source/token/captcha-token`)
-- **抽奖**(玲珑塔活动平台 `llt-gateway-prod`):三步
-  1. `POST /api/v1/activity/auth/lottery/sign` — 领取当日抽奖次数(完成签到任务换次数),返回 `chance`
-  2. `GET /api/v1/activity/auth/lottery/chance` — 查剩余次数
-  3. `POST /api/v1/activity/auth/lottery/click` body `{component_no, activity_no, batch_no:""}` — 抽奖,返回 `prize_name` + `reward_num`,循环到次数耗尽(上限 10 次,每次间隔 1.2s)
-- **抽奖换名复用同一鉴权**:`authtoken`=usertoken、`channel`=L0、`bucode`=L00602,只有 `x-gaia-api-key` 换成抽奖网关 `2f9e3889-…`(固定常量),`origin`/`referer` 换 `llt.longfor.com`
-- **通道校验**:抓取强制 `x-lf-channel === 'L0'`,小程序(C2)抓包会被拒,避免和小程序版混抓
-- **幂等**:签到成功写 `lhtj_app_done=今日日期`,密集 cron 当天重复唤醒直接静默退出
-- **风控码** `8040012` / `8040013` = 顶象拦截(账号已被风控标记)→ 通知「⚠️ 账号已被风控」,建议暂停脚本、改用 App 手动签到养号一段时间再恢复
-
 ## BoxJS 开关
 
 | key | 默认 | 说明 |

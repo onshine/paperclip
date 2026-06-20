@@ -81,12 +81,7 @@ script-providers:
     interval: 86400
 ```
 
-## 实现细节
-
-- 鉴权依赖 `session-token`(来自小程序 `wx.login()` 的 jscode → `/txbbs-user/user/login` 换取)
-- jscode 是一次性的,脚本无法主动刷新,**token 过期必须重新进小程序触发**
-
-### BoxJS 参数
+## BoxJS 参数
 
 | key | 说明 |
 |---|---|

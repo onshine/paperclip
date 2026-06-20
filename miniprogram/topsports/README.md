@@ -95,23 +95,13 @@ script-providers:
     interval: 86400
 ```
 
-## 实现细节
-
-- **鉴权** — Cookie 里的 `Authorization`(UUID Bearer 会话票据)+ `memberId`，无签名；服务端 TTL 约 1 小时
-- **Authorization 自动刷新** — `wxmall.topsports.com.cn/shopMember/` 重写监听原生小程序请求，开 app 即静默更新存储的 token，无需每次手动重抓
-- **H5 会话降级(QZ_SID)** — `http-response` 规则监听 `m.topsports.com.cn` 所有响应头，WeChat 公众号 OAuth 回调(`snsapi_base`，用户无感)会在 `Set-Cookie` 下发 `QZ_SID`；Authorization 失效时 cron 自动用 QZ_SID + `originH5Flag:true` 降级重试 doSign；QZ_SID 有效期通常远超 1 小时
-- **activityId 动态获取** — 先 GET `/h5/act/signIn/actInfo?brandCode=TS` 拿当前 activityId，再 POST `/h5/act/signIn/doSign`
-- **acw_tc 刷新** — `refreshAcwTc()` 重放 `/static/setCookieApplets.html` 入口拿新 acw_tc（阿里云 WAF cookie，Max-Age=1800）；同时探测该入口是否下发 QZ_SID（日志可见）
-
 ## 维护记录
 
 | 日期 | 变更 |
 |---|---|
-| 2026-05-31 | 初版，Cookie 鉴权，activityId 走 actInfo 动态获取 |
-| 2026-06-02 | 确诊 doSign 50010 真因：Authorization 轮换；refreshAcwTc() 处理 acw_tc |
-| 2026-06-06 | 增加 `wxmall.topsports.com.cn/shopMember/` 重写，开 app 自动刷新 Authorization，脚本复活 |
-| 2026-06-06 | 增加 H5 会话(QZ_SID)捕获与降级路径；Authorization 1 小时过期后自动切 H5 会话重试 |
-| 2026-06-07 | 实测 QZ_SID < 1 天即失效，两道 auth 均无法撑过 24 小时 → 📦 归档 |
+| 2026-05-31 | 初版 |
+| 2026-06-06 | 增加开 app 自动刷新凭据 + H5 会话降级重试,脚本一度复活 |
+| 2026-06-07 | 实测两道凭据均无法撑过 24 小时 → 📦 归档 |
 
 ## 归档原因
 

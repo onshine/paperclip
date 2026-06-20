@@ -2,8 +2,7 @@
  * 万达电影 · 每日签到(成长值 +1) —— 全自包含版,无需 Worker/VPS
  *
  * 抓取:打开万达电影 APP →「我的」,见 wanda.cookie.js
- * 签到:cron 定时。签名 x-ry-check 由内嵌的纯 JS 引擎本地算出
- *      (万达小程序 wasm 经 wasm2js 转为纯 JS,Loon 直接跑,不联网算签名)。
+ * 签到:cron 定时,签名本地计算,全自包含不联网。
  *
  * @Author: MaYIHEI <https://github.com/MaYIHEI/paperclip>
  * @Channel: Telegram 频道 https://t.me/mayihei

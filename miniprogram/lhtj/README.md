@@ -78,13 +78,6 @@ script-providers:
     interval: 86400
 ```
 
-## 实现细节
-
-- 签到接口: `POST /lmarketing-task-api-mvc-prod/openapi/task/v1/signature/clock`
-- 鉴权: `x-lf-usertoken` + `x-gaia-api-key` + `x-lf-dxrisk-token`(顶象 SDK 设备指纹)
-- 通道校验: 抓取时强制 `x-lf-channel === 'C2'`,APP 通道(L0)会被拒绝避免误抓
-- 风控码 `8040012` / `8040013` 表示顶象拦截(目前仅 APP 通道会触发)
-
 ## 维护记录
 
 | 日期 | 变更 |

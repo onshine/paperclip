@@ -78,15 +78,6 @@ script-providers:
     interval: 86400
 ```
 
-## 实现细节
-
-- 签到页 H5 host: `m.xiaomiyoupin.com`（区别于 APP 原生 API `shopapi.io.mi.com`）
-- 触发接口（cookie 抓取）: `POST /mtop/act/redPacketSign/getActInfo`，页面打开时自动发出
-- 签到执行: `POST /mtop/act/redPacketSign/fetch`（命名规律推断，待首次未签时验证）
-- 需完整 browser-like 头: `origin` + `referer` + `sec-fetch-*`，缺少会被静默降级
-- 静态 cookie `mijiasn=YPQD_YPMRQD` / `mjclient=YouPin` 硬编码；动态 cookie（`serviceToken` / `youpin_sessionid` / `youpindistinct_id`）从重写请求里抓取
-- 活动 ID `686b76a6ac546f0001b930c5` 固定（Xiaomi 更新活动后可能变）
-
 ## 维护记录
 
 | 日期 | 变更 |

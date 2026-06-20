@@ -4,9 +4,9 @@
 
 # 味多美
 
-> ✅ **维护中** · **2026-06-05 从归档复活** —— 解包发现 `loginByOpenid` 旁路,用「公众号 openid 换 token」绕开 `wx.login()`,openid 永久固定、免续期。2026-06-07 适配签到接口拆分(新增 `signIn` 接口 + `memberName`)。长期稳定性观察中。
+> ✅ **维护中** · 一次抓取后凭据长期有效、免续期,cron 自动签到。
 
-味多美微信小程序每日签到送积分(每日 +2 分)。底层卓健科技(zjian.net)+ 大咖(bigaka)会员 SaaS,`brandId=2039`(味多美北京)。
+味多美微信小程序每日签到送积分(每日 +2 分)。
 
 ## 文件
 
@@ -84,29 +84,17 @@ script-providers:
     interval: 86400
 ```
 
-## 实现细节
-
-- **复活核心:`loginByOpenid` 旁路** — 原 `buyer-token` 续期绑死 `wx.login()`(归档主因)。解包发现登录测试页有 `GET /api/member/h5/loginByOpenid?openid=<公众号openid>&brandId=2039`,**用公众号 openid 直接换 token,完全不碰 wx.login**,生产环境放行、无额外鉴权,openid 永久固定 → 一次抓取长期有效(和龙德广场「一次抓取永久有效」同级)
-- **抓的是「公众号 openid」** — `http-response` 挂 `minaLogin`(全新登录触发)或 `member/find`(「我的/会员」页正常浏览即触发,**已登录态也发,免删小程序重登**),两接口响应结构一致,均取 `data.member.openid`(公众号 openid)。**注意不是小程序 openid**(`miniWeixinInfo.openid` / `memberWeixinApps[].openid`),小程序 openid 调 loginByOpenid 会返回 `410 根据openid获取unionid失败`
-- **签到链(全动态,无写死易变值)** — `loginByOpenid` 换 token + memberId → POST `pointSignInActivitySet/get` 取当前 `activityId` → POST `signInLog?activityId&memberId`(本 SaaS 里它既返回今日签到状态、调用本身也完成当日签到) → 必要时再 POST `pointSignInActivitySet/signIn` 兜底
-- **成败只看积分差,不看 `ok`/`result`** — 实测**所有**接口都返回 `result:0` / `ok:false`(连 `loginByOpenid`、查积分这种明显成功的也是),这两个字段无法区分成败。脚本改为签到前后各读一次 `getMyPointInfo.point`,**积分涨了才算签到成功**;积分没动但 `signInLog` 有今日 `createTime` → 当天已签(多为 cron 已跑过)
-- **memberName** — 从 `member/find` 响应的 `data.member.name` 抓取并存入 BoxJS `wedome_membername`，签到 body 必填；进一次小程序「我的」页即可同步
-- **鉴权头** — `buyer-token`(loginByOpenid 换来的)+ `brandId: 2039`,无 body 签名
-- **同套 SaaS 通用** — 卓健/大咖服务大量品牌小程序,改 `brandId` + `openid` 即可适配其他商家
-
 ## 维护记录
 
 | 日期 | 变更 |
 |---|---|
-| 2026-05-31 | 初版;抓页面加载的 `get` 拿 buyer-token,cron 现取 activityId/memberId 重建 signIn |
-| 2026-06-01 | 📦 归档:`buyer-token` 续期需小程序登录(`401 用户未登录`),脚本无解 |
-| 2026-06-05 | 🧪 **复活**:解包发现 `loginByOpenid` 旁路(公众号 openid 换 token,免 wx.login),改抓公众号 openid + cron 自动换 token,端到端实测签到成功 |
-| 2026-06-05 | 抓取规则放宽到 `member/find`(「我的/会员」页正常浏览触发),免删小程序重登;原仅 `minaLogin` 须全新登录才命中 |
-| 2026-06-07 | 适配签到接口拆分:`signInLog` 由执行变为查询,实际签到改为新接口 `signIn`,body 增加 `memberName`；新增 `tentacle-content` 系列必填 header；捕获规则同步存储 `member.name` |
-| 2026-06-07 | 新增 `activityId` 变动检测:每次签到后存储 activityId,下次对比,变了通知用户 |
+| 2026-05-31 | 初版 |
+| 2026-06-01 | 📦 归档:凭据续期需小程序登录,脚本无解 |
+| 2026-06-05 | 🧪 复活:改用公众号 openid 自动换 token,免重登,实测签到成功 |
+| 2026-06-07 | 适配签到接口拆分,补必填字段 + activityId 变动检测 |
 | 2026-06-10 | 长期稳定,🧪→✅ 维护中 |
-| 2026-06-13 | 🐞 修复天天误报签到成功:① 旧版 `signInLog` 短路逻辑不论日期都判「今日已签到」直接 return,从不真正签到;② 误把 `result===0`/`ok===true` 当成功标志,但实测**所有接口** `result` 恒 0、`ok` 恒 false。改为**签到前后积分差**判成败(涨了才算成功),`signIn` 仅作兜底 |
-| 2026-06-14 | ✅ 验证生效:cron 隔夜积分 852→854(+2),`signInLog` 出现全新今日记录(id 变、createTime=当日 08:10),`getMyPointInfo.updateTime` 同步到当日 08:10 → 签到真实到账。注:`index` 恒为 1(非连签天数,不影响每日 +2) |
+| 2026-06-13 | 🐞 修复天天误报签到成功:改为按签到前后积分差判成败 |
+| 2026-06-14 | ✅ 验证生效:隔夜积分 +2 真实到账 |
 
 ## 已知限制
 

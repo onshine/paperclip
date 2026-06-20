@@ -80,19 +80,14 @@ script-providers:
     interval: 86400
 ```
 
-## 实现细节
-
-- **JWT 永不过期** — token `exp` 字段 = 4092599349 (2099-09-22),抓一次永久有效
-- **签名算法本地复现** — `X-ZHIMA-SIGNATURE = HmacSHA256(url + JSON.stringify(body) + ts + nonce, JWT)`,纯 JS 实现无外部依赖
-- **同套 SaaS 通用** — 底层是芝麻科技(china-smartech)给商场做的 SaaS,改 `mall_id` 理论上能适配其他商场
-
 ## 维护记录
 
 | 日期 | 变更 |
 |---|---|
-| 2026-05-23 | 初版,签名算法本地复现,无外部依赖 |
+| 2026-05-23 | 初版 |
 | 2026-05-24 | tag 统一为 `龙德广场 Cookie` / `龙德广场签到`,加 img-url 图标 |
 
 ## 已知限制
 
 - 单脚本架构(`$request` 是否存在区分抓 cookie / cron)
+- Cookie 长效,抓一次通常长期有效,基本无需重抓

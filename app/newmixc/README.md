@@ -79,13 +79,6 @@ script-providers:
     interval: 86400
 ```
 
-## 实现细节
-
-- 网关: `POST /mixc/gateway` 统一网关 + `action` 字段区分业务
-- 签到 action: `mixc.app.memberSign.sign`
-- 签名: `md5(sort_keys + '&' 拼接 + 盐)`,盐 `P@Gkbu0shTNHjhM!7F` 从 H5 包挖出
-- 已内联轻量 md5 实现,无外部依赖
-
 ## 维护记录
 
 | 日期 | 变更 |

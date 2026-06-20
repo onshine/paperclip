@@ -78,21 +78,18 @@ script-providers:
     interval: 86400
 ```
 
-## 实现细节
+## 说明
 
-- 微信小程序 `wx2a212470bade49bf`
-- signature 算法已本地复现(反编译 wxapkg),无外部依赖
-- 支持多账号(BoxJS `miniso_data` 用 `@` 分隔)
+- 支持多账号:BoxJS `miniso_data` 用 `@` 分隔多个 Cookie。
 
 ## 维护记录
 
 | 日期 | 变更 |
 |---|---|
-| 2026-05 | 初版,反编译 wxapkg 复现 signature 算法 |
+| 2026-05 | 初版 |
 | 2026-05-24 | tag 统一为 `名创优品 Cookie` / `名创优品签到`,加 img-url 图标 |
-| 2026-06-17 | 抓取接口从 `login` 换成 `GetUserInfoV3`(login 仅登录时触发,导致间歇抓不到),改 http-request |
+| 2026-06-17 | 抓取接口换成进「我的」页即触发,修间歇抓不到 |
 
 ## 已知限制
 
 - mini 币每日上限较低,主要为打卡奖励
-- signature 算法若官方升级需重新反编译

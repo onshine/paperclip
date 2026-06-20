@@ -78,20 +78,13 @@ script-providers:
     interval: 86400
 ```
 
-## 实现细节
-
-- **抓取**:http-response 模式,匹配 `svip_lite/user_info`(进「我的」页自动触发)+ `wechat_message/template_info`,`require-body` 解响应体
-- **鉴权**:`PopVip-Auth: Bearer <JWT>`(老版用 `identity_code`,v5.13.8 起改为 JWT)
-- **user_id / phone 从 JWT payload 解**:新版接口不再回传这些字段,取 token 第二段 base64url 解码后从 payload 取
-- **默认头像**:接口不返回头像时,写死 pin 仓库的 `ppmt.png` 兜底
-
 ## 维护记录
 
 | 日期 | 变更 |
 |---|---|
 | 2024-06-08 | 原作者 [@Sliverkiss](https://github.com/Sliverkiss) 初版 |
-| 2026-05-08 | 适配 v5.13.8: 接口路径变更为 `svip_lite/user_info`,鉴权改为 `PopVip-Auth: Bearer JWT`,user_id/phone 从 JWT payload 解析 |
-| 2026-05-08 | 修复 getUserInfo 返回为空时 `phone_num.length` 异常 |
+| 2026-05-08 | 适配 v5.13.8 新接口与鉴权 |
+| 2026-05-08 | 修复 getUserInfo 返回为空时的异常 |
 
 ## 已知限制
 

@@ -92,17 +92,6 @@ script-providers:
     interval: 86400
 ```
 
-## 实现细节
-
-- **能成立的前提** — 驴充充所有 token 的 JWT 只写 30 秒(userToken)/ 90 秒(refreshToken)过期,但服务端**实测不认这个 exp**:抓包里一个 refreshToken 在 JWT 过期 **52 分钟后**仍成功换新 token(`code:200`)。说明服务端按 `jti` 后台记账,JWT 的过期时间是幌子。本脚本正是靠这点存 `refreshToken` 续命
-- **三步链**(全走 `appapi.lvcchong.com`):
-  1. `POST /accessToken/refresh` 送 `refreshToken` → 新 `userToken` + 新 `refreshToken`(**滚动,必须写回 BoxJS**)
-  2. `POST /appBaseApi/h5/accessEntrance` 送 `userToken`+`phone`+`userId` → 积分 H5 专用 `userToken`
-  3. `POST /appBaseApi/scoreUser/sign/userSign` 送 H5 token + `sourceType=3` → 签到
-- **签到判定** — `code===200` 且有 `data` 即成功,读 `signDays`(累计天数)+ `score`(本次积分)
-- **凭证存储** — BoxJS key `lvcchong_auth`(JSON),含 `refreshToken`/`userToken`/`phone`/`userId`/`deviceId` 等;`refreshToken` 每次刷新自动更新
-- **抓取分两路** — `refreshToken` 是「一次性滚动」,请求体里的旧值用过即废,所以只从 **http-response** 抓服务端新签发的那个;`phone`/设备指纹不滚动,从 **http-request** 抓。集齐才通知一次,之后随 App 滚动静默存最新
-
 ## 归档原因(实测结论)
 
 跑了多轮带"refreshToken 距签发分钟数"标尺的对照实验,失效阈值干净一致:
@@ -116,18 +105,15 @@ script-providers:
 - cron 一天一次(间隔 24h)或 6 小时一次,两次间隔都 ≫ 20 分钟 → token 每次都是死的,**必然失败**
 - 唯一能续命的频率是**每 ~15 分钟刷一次**(一天近百次),为一个充电签到这么搞不值,且一次没跑准就得重抓
 - **根因**:真实长期登录态是**运营商一键登录(SIM 卡,冷启时静默重登,抓包里 `onekey2.cmpassport.com`)**,脚本碰不到 SIM 那层;refreshToken 只是 20 分钟的临时工作票。与滔搏的「微信登录」同一堵墙,只是多包一层短票
-- **登录方式全不可脚本化(2026-06-03 解包 App+小程序确认)**:App 仅「短信验证码 / Apple ID / SIM 一键登录」三种,**无账号密码登录**;小程序解包里有 `LoginForPassword` 页但实际不可用。短信=一次性+图形验证码(`smsCodeVerifyImage`)、Apple ID=设备+SDK 绑定、SIM=硬件绑定,均无法脚本重登。**没有「可脚本登录 + 拿 token」的组合 → 配合 20 分钟 token,彻底无解**
-- **顺带(对本脚本无用,留作参考)**:小程序解包已破协议签名——`nonce = RSA_encrypt(timestamp)`,RSA 公钥硬编码在 `app-service.js`(`t.encrypt` / `encryptWithRSA` 两把);但签名能复刻也没用,卡在登录拿不到 token,不是卡签名
-- 早期"App 抓包里 refreshToken 过期 52 分钟仍可用"的观察是误导(App 靠后台保活/或 SIM 重登维持),不代表脚本存的那个能活那么久
+- **登录方式全不可脚本化**:App 仅「短信验证码 / Apple ID / SIM 一键登录」三种,无账号密码登录,均无法脚本重登。配合 20 分钟 token,彻底无解
 
 ## 维护记录
 
 | 日期 | 变更 |
 |---|---|
-| 2026-06-02 | 初版,refreshToken 续命,三步链 refresh→accessEntrance→userSign,sourceType=3 |
-| 2026-06-02 | 修 `TOKEN已刷新` 失效:refreshToken 改从 http-response 抓(请求体里是用过即废的旧值) |
-| 2026-06-03 | 加签发时长标尺定位,实测 refreshToken 空闲仅 ~20 分钟,无法定时续命 → 📦 归档 |
-| 2026-06-03 | 解包 App+小程序复核:无账密登录,三种登录全不可脚本化,定论无解(协议签名虽破但无用) |
+| 2026-06-02 | 初版,refreshToken 续命签到 |
+| 2026-06-03 | 实测 refreshToken 空闲仅 ~20 分钟,无法定时续命 → 📦 归档 |
+| 2026-06-03 | 复核:三种登录全不可脚本化,定论无解 |
 
 ## 已知限制
 

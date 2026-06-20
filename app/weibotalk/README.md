@@ -79,15 +79,7 @@ script-providers:
     interval: 86400
 ```
 
-## 实现细节
-
-### 关键坑
-
-- **必须双 cookie 抓取**:列表接口和签到接口的 `X-Validator` 反爬签名**路径绑定**,跨路径复用会返回「用户不存在」
-- 已签判断用 `ext_button.type === 'sign_in'`,不是 `button.name` 文字匹配
-- 列表用 POST + `since_id` 翻页,递归找 `card_type:8` 提取超话
-
-### BoxJS 参数
+## BoxJS 参数
 
 | key | 说明 |
 |---|---|

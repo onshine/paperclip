@@ -83,41 +83,17 @@ script-providers:
     interval: 86400
 ```
 
-## 实现细节
-
-- **WVER 签名(已逆向 + 本地验证通过)** — `WVER = hex( RSA-1024-PKCS#1v15( WTS的ASCII ) )`,256 hex。公钥(指数 `010001`、模数 `C2D84A72…17FC55959`)硬编码在 H5 库 `teld-thirdpart.min.js`。用 iOS JavaScriptCore 原生 `BigInt` 做 modpow,纯本地、无联网。已用自生成密钥对做加密→私钥解密的闭环验证,确认实现正确
-- **Sign / t 省略** — 旧版 H5 还发 `Sign`(4×SHA256)+ `t`,但当前官方 `teld-core.min.js` 的 `_webSgParamSetting` 已不发这俩,服务端不再校验,故省略
-- **鉴权 + 续期(已实现)** — `telda`(X-Token)仅 ~20 分钟,cron 时早过期;故每次先用 `teldb`(~15 天 refresh token)走 `UserAPI-WEBUI-SRefreshToken` 换新 `telda`。刷新请求体 `Data` 用 **AES-128-CBC**(key=`UTS+"000000"`、iv=随机 16 字符)加密 `{DeviceType,ReqSource,RefreshToken:teldb,ClientIP}`;响应两层 AES 解密(外层默认 key/iv `7fb4…`/`98d7…`,内层用响应的 UTS/UVER)拿到新 `AccessToken`(telda)+ 新 `RefreshToken`(teldb,**滚动写回**)
-- **AES 纯 JS 自带** — Loon 无 crypto,脚本内置 AES-CBC(加/解密),已用抓包数据验证:加密结果与服务端 `Data` 逐字节一致、解密能还原响应
-- **teldb 颠倒序** — cookie 与刷新响应里的 teldb 都是 `签名.载荷.A01头部` **颠倒**存的,发刷新请求前要 `split(".").reverse().join(".")` 还原成正常 JWT,否则报 `BIZ-User-0143`
-- **打卡判定** — `state==="1"` 且 `data.IsCheckInSuccess` 为成功,读 `ContinuousDays`/`TotalDays`;`12904 今日已打卡` 按已签处理
-- **关键常量/接口**(均硬编码在 `teld.js`,逆向自 H5 库,无抓包也能维护):
-
-  | 用途 | 值 / 来源 |
-  |---|---|
-  | WVER RSA 模数 `__d` | `C2D84A72…17FC55959`(1024 位) |
-  | WVER RSA 指数 `__c` | `010001`(65537) |
-  | cajess AES key `__a` | `7fb498553e3c462988c3b9573692bd5f`(注:cajess 函数里 `_a=6fb…` 是诱饵,差一字符) |
-  | cajess AES iv `__b` | `98d71fe589499967`(诱饵 `_b=…968`) |
-  | 打卡接口 | `sgi.teld.cc/api/invoke?SID=ProSrv-CompleteCheckInTask` |
-  | 刷新接口 | `sgi.teld.cn/api/Invoke?SID=UserAPI-WEBUI-SRefreshToken` |
-  | 小程序 appid | `wx8d32c1a71ecd965d` |
-
 ## 维护记录
 
 | 日期 | 变更 |
 |---|---|
-| 2026-06-03 | PoC 初版:逆向 WVER(RSA-1024 PKCS1v15)本地验证通过,省略 Sign/t,telda 直接打卡 |
-| 2026-06-03 | **核心机制实测通过**:服务端返回 `12904 今日已打卡`,证明 WVER 被接受、Sign/t 不需、telda 可用。修 12904 误判为失败 |
-| 2026-06-03 | 实测 telda 真 20 分钟即失效(`Token自身已过期`),确认必须做 teldb 刷新 |
-| 2026-06-04 | r1:逆向并实现 teldb 刷新 telda(cajess=AES-CBC,默认 key/iv 找到、cajess 内 `_a/_b` 为诱饵)。内置纯 JS AES,抓包数据逐字节验证通过。telda/teldb 滚动写回,可日常 cron |
-| 2026-06-04 | r2 修抓 Cookie(多行 cookie 头);r3 修 `BIZ-User-0143`(teldb cookie 为颠倒序,发请求前还原)。**全链路实测跑通**:间隔 40 分钟两次 cron 均刷新+打卡成功 |
+| 2026-06-03 | 初版:每日打卡,凭据自动续期,全自包含无需外部服务 |
+| 2026-06-04 | 全链路实测跑通:cron 自动续期 + 打卡成功 |
 | 2026-06-10 | 多日 cron 稳定,🧪→✅ 维护中 |
 
 ## 已知限制
 
 - **teldb 滚动,勿在周期内手动开签到页**:每次刷新 teldb 都换新、脚本自动写回;若你手动打开特来电小程序签到页,会把 teldb 滚走、作废脚本存的那个 → 需重抓 Cookie
 - **teldb ~15 天有效**:过期后需重进签到页重抓 Cookie(暂未做 app 账密登录自动 bootstrap)
-- **WTS 用本机时间**:与服务器时差过大可能验签被拒,届时可补 `WRPFrame-GetDateTime` 校时
-- **加速乐**:当前对 API 为放行模式(只需 `__jsluid_s`,已随 Cookie 抓取);若日后升级 JS 挑战会失效
-- **长期稳定性待观察**:目前实测到 `12904 今日已打卡`,未签日的 `✅ 签到成功` 及 teldb 跨多日续期待持续验证
+- **设备时间**:与服务器时差过大可能验签被拒,保持系统时间准确即可
+- **长期稳定性待观察**:未签日的 `✅ 签到成功` 及凭据跨多日续期待持续验证
