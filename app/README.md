@@ -15,10 +15,10 @@
 | [`newmixc/`](./newmixc/) | 一点万象(华润万象 APP) - 每日签到 | ✅ 维护中 |
 | [`mishop/`](./mishop/) | 小米商城 - 每日签到 | ✅ 维护中 |
 | [`youpin/`](./youpin/) | 小米有品 - 每日签到红包 | ✅ 维护中 |
-| [`lhtj/`](./lhtj/) | 龙湖天街 App - 每日签到 + 幸运抽奖 | 🧪 待验证 |
-| [`qqmusic/`](./qqmusic/) | QQ 音乐 - 绿钻成长值每日签到(免签名通道 + refresh_key 自动续期) | 🧪 待验证 |
-| [`wanda/`](./wanda/) | 万达电影 - 每日签到(成长值,签名引擎内嵌,无需 Worker) | 🧪 待验证 |
-| [`tingtingfm/`](./tingtingfm/) | 听听FM - 任务中心每日签到(成长值 + 金币) | 🧪 待验证 |
+| [`lhtj/`](./lhtj/) | 龙湖天街 App - 每日签到 + 幸运抽奖 | ✅ 维护中 |
+| [`qqmusic/`](./qqmusic/) | QQ 音乐 - 绿钻成长值每日签到(免签名通道 + refresh_key 自动续期) | ✅ 维护中 |
+| [`wanda/`](./wanda/) | 万达电影 - 每日签到(成长值,签名引擎内嵌,无需 Worker) | ✅ 维护中 |
+| [`tingtingfm/`](./tingtingfm/) | 听听FM - 任务中心每日签到(成长值 + 金币) | ✅ 维护中 |
 | [`wps/`](./wps/) | WPS Office - 每日签到 + 福利中心(打卡/抽奖/试用申请/限量爆款) | 🧪 待验证 |
 | [`camscanner/`](./camscanner/) | 扫描全能王 - 幸运大转盘每日抽奖(看视频转盘,每日 3 次) | 🧪 待验证 |
 | [`lvcchong/`](./lvcchong/) | 驴充充(充电桩) - 积分中心每日签到 | 📦 已归档 |

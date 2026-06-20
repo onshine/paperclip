@@ -2,7 +2,7 @@
   <img src="https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/wanda.png" width="80" alt="万达电影" />
 </p>
 
-# 万达电影 🧪
+# 万达电影
 
 万达电影 APP 每日签到,签到送成长值 +1。
 
@@ -119,6 +119,6 @@ glue(`createSigner` / `urlEncodeUnicode`)和签名入参(`signature(ts, uri, url
 
 ## 已知限制
 
-- **token 时效未知**:`x-ry-token` 是会话票据,TTL 未实测。若像部分 APP 那样「开 APP 即轮换」,daily cron 会间歇失败 —— 届时按通知重抓即可。**这是本脚本标 🧪 待验证的主因**,需观察几天稳定性。
+- **token 时效**:`x-ry-token` 是会话票据,实测可支撑 daily cron 稳定运行;若某天「开 APP 即轮换」导致间歇失败,按通知重抓即可。
 - **签名校验失败(403)** = token 失效:脚本会提示「重开万达 APP 我的页重抓 Cookie」。
 - **万达若更新小程序 wasm**(换签名算法),内嵌引擎需按上方「重建内嵌引擎」步骤重新生成。目前 `ver=6.5.3` 引擎稳定。
