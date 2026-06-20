@@ -259,18 +259,21 @@ async function taskTrial() {
         // preview 列出当天奖品
         const pv = await callTrial("divide_prize.preview", {});
         const details = (((pv || {}).data || {}).divide_prize || {}).divide_prize_details || [];
-        if (!details.length) {
-            $.results.push(`✅ ${tag}:今日已申领`);
+        // 没明细 / 三档都已申领 → 直接收成一句(正常完成,不逐项罗列)
+        if (!details.length || details.every((d) => d.has_join)) {
+            $.results.push(`✅ ${tag}:全部已申领`);
             return;
         }
 
-        // 三个全领(均次日开奖),无优先;逐个申领,动作间隔避风控,每项状态单独写清
+        // 三个全领(均次日开奖),无优先;逐个申领,动作间隔避风控,每项状态单独写清。
+        // 行级图标:只有出现真问题(已领完/没资格/原文异常)才 ⚠️,否则 ✅。
         const parts = [];
+        let allGood = true;
         let acted = 0;
         for (const d of details) {
             const name = short(d.title);
             if (d.has_join) { parts.push(`${name}已申领`); continue; }
-            if (d.stock != null && d.stock <= 0) { parts.push(`${name}已领完`); continue; }
+            if (d.stock != null && d.stock <= 0) { parts.push(`${name}已领完`); allGood = false; continue; }
             if (acted > 0) await sleep(jitter(ACTION_GAP));
             acted++;
             const su = await callTrial("divide_prize.sign_up", {
@@ -282,11 +285,10 @@ async function taskTrial() {
             } else {
                 const st = classify(inner.reason || (su && su.msg), "已申领");
                 parts.push(`${name}${st.t}`);
-                if (st.e !== "✅") $.log(`[WARN] ${tag} ${d.title}: ${JSON.stringify(su).slice(0, 200)}`);
+                if (st.e !== "✅") { allGood = false; $.log(`[WARN] ${tag} ${d.title}: ${JSON.stringify(su).slice(0, 200)}`); }
             }
         }
-        const anyOk = parts.some((p) => p.includes("✓"));
-        $.results.push(`${anyOk ? "✅" : "⚠️"} ${tag}:${parts.join(" ")}`);
+        $.results.push(`${allGood ? "✅" : "⚠️"} ${tag}:${parts.join(" ")}`);
     } catch (e) {
         $.results.push(`❌ ${tag}:异常`);
         $.log(`[ERROR] ${tag}: ${e}`);
