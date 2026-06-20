@@ -962,6 +962,110 @@
         "https://raw.githubusercontent.com/MaYIHEI/pin/main/app/lvcchong.png",
         "https://raw.githubusercontent.com/MaYIHEI/pin/main/app/lvcchong.png"
       ]
+    },
+    {
+      "id": "paperclip.camscanner",
+      "name": "扫描全能王",
+      "keys": [
+        "camscanner_data"
+      ],
+      "settings": [
+        {
+          "id": "camscanner_data",
+          "name": "Cookie(Token)",
+          "val": "",
+          "type": "text",
+          "placeholder": "进 APP 自动抓，或手填",
+          "desc": "扫描全能王登录 Token(抓 get_user_attribute 自动写入);清空此项即等于清除 Cookie"
+        }
+      ],
+      "author": "@MaYIHEI",
+      "repo": "https://github.com/MaYIHEI/paperclip/tree/main/app/camscanner",
+      "script": "https://raw.githubusercontent.com/MaYIHEI/paperclip/main/app/camscanner/camscanner.js",
+      "icons": [
+        "https://raw.githubusercontent.com/MaYIHEI/pin/main/app/camscanner.png",
+        "https://raw.githubusercontent.com/MaYIHEI/pin/main/app/camscanner.png"
+      ]
+    },
+    {
+      "id": "paperclip.wps",
+      "name": "WPS",
+      "keys": [
+        "wps_sid",
+        "wps_clear",
+        "wps_task_hot",
+        "wps_task_trial",
+        "wps_task_signin",
+        "wps_task_fragment",
+        "wps_task_lottery",
+        "wps_task_clockin"
+      ],
+      "settings": [
+        {
+          "id": "wps_sid",
+          "name": "Cookie(wps_sid)",
+          "val": "",
+          "type": "text",
+          "placeholder": "进活动页自动抓，或手填",
+          "desc": "WPS 登录态 wps_sid(长效，抓一次长期用);留空靠抓取自动写入"
+        },
+        {
+          "id": "wps_clear",
+          "name": "清除 Cookie",
+          "val": false,
+          "type": "boolean",
+          "desc": "开启后运行一次会清空已抓 wps_sid 并自动复位为关闭;之后重新抓取"
+        },
+        {
+          "id": "wps_task_hot",
+          "name": "限量爆款",
+          "val": true,
+          "type": "boolean",
+          "desc": "福利中心限量爆款领取(每天 1 次，库存少放最前)"
+        },
+        {
+          "id": "wps_task_trial",
+          "name": "会员试用",
+          "val": true,
+          "type": "boolean",
+          "desc": "会员免费试用瓜分，三档(7天/月卡/3个月卡)全部申领，次日开奖"
+        },
+        {
+          "id": "wps_task_signin",
+          "name": "每日签到",
+          "val": true,
+          "type": "boolean",
+          "desc": "任务中心每日签到，积分 +1"
+        },
+        {
+          "id": "wps_task_fragment",
+          "name": "打卡领会员",
+          "val": true,
+          "type": "boolean",
+          "desc": "福利中心连续打卡领会员"
+        },
+        {
+          "id": "wps_task_lottery",
+          "name": "天天抽奖",
+          "val": true,
+          "type": "boolean",
+          "desc": "福利中心每日 1 次抽奖"
+        },
+        {
+          "id": "wps_task_clockin",
+          "name": "小程序打卡",
+          "val": true,
+          "type": "boolean",
+          "desc": "WPS 小程序每日打卡，抽 PDF/图片权益包等"
+        }
+      ],
+      "author": "@MaYIHEI",
+      "repo": "https://github.com/MaYIHEI/paperclip/tree/main/app/wps",
+      "script": "https://raw.githubusercontent.com/MaYIHEI/paperclip/main/app/wps/wps.js",
+      "icons": [
+        "https://raw.githubusercontent.com/MaYIHEI/pin/main/app/wps.png",
+        "https://raw.githubusercontent.com/MaYIHEI/pin/main/app/wps.png"
+      ]
     }
   ]
 }

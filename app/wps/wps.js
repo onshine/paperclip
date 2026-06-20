@@ -52,10 +52,13 @@
 
 const $ = new Env("WPS");
 
-const SCRIPT_VERSION = "2026-06-20.r1"; // 改一次 +1,确认拉到最新版
+const SCRIPT_VERSION = "2026-06-20.r2"; // 改一次 +1,确认拉到最新版
 $.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
 
 const CK_KEY = "wps_sid";
+
+// 任务开关:BoxJS 里把对应项设为关闭(存 "false")才跳过;未设置/其它值=默认开启
+const taskOff = (k) => $.getdata(k) === "false";
 
 // ===== 接口 =====
 const ISLOGIN = "https://account.wps.cn/api/v3/islogin";        // 动态取 user_id(脚本不硬编码任何账号信息)
@@ -127,22 +130,27 @@ async function main() {
         return;
     }
 
-    // 10 点 cron 触发:抢完限量爆款顺手把其余做了,逐个串行、动作间随机间隔(模拟真人,避风控)
-    await taskComponent("限量爆款", COMPONENTS.hot, "privilege_grant.exec", {}, "已领取"); // 库存少,放最前
-    await sleep(jitter(ACTION_GAP));
-    await taskTrial();
-    await sleep(jitter(ACTION_GAP));
-    await taskSignIn(uid);
-    await sleep(jitter(ACTION_GAP));
-    await taskComponent("打卡领会员", COMPONENTS.fragment, "fragment_collect.sign_in", {
-        fragment_collect: { sign_date: beijingDate(), series_id: "", is_new_sign_series: true },
-    }, "已打卡");
-    await sleep(jitter(ACTION_GAP));
-    await taskComponent("天天抽奖", COMPONENTS.lottery, "lottery_v2.exec", {
-        lottery_v2: { session_id: COMPONENTS.lottery.session_id },
-    }, "已完成");
-    await sleep(jitter(ACTION_GAP));
-    await taskClockIn();
+    // 任务清单:每项可在 BoxJS 单独开关(默认开;关闭则整项跳过,连同它的随机间隔)。
+    // 10 点 cron 触发:抢完限量爆款顺手把其余做了,逐个串行、动作间随机间隔(模拟真人,避风控)。
+    const tasks = [
+        ["wps_task_hot", () => taskComponent("限量爆款", COMPONENTS.hot, "privilege_grant.exec", {}, "已领取")], // 库存少,放最前
+        ["wps_task_trial", () => taskTrial()],
+        ["wps_task_signin", () => taskSignIn(uid)],
+        ["wps_task_fragment", () => taskComponent("打卡领会员", COMPONENTS.fragment, "fragment_collect.sign_in", {
+            fragment_collect: { sign_date: beijingDate(), series_id: "", is_new_sign_series: true },
+        }, "已打卡")],
+        ["wps_task_lottery", () => taskComponent("天天抽奖", COMPONENTS.lottery, "lottery_v2.exec", {
+            lottery_v2: { session_id: COMPONENTS.lottery.session_id },
+        }, "已完成")],
+        ["wps_task_clockin", () => taskClockIn()],
+    ];
+    let ran = 0;
+    for (const [key, run] of tasks) {
+        if (taskOff(key)) continue;                    // BoxJS 关闭该任务 → 跳过
+        if (ran++ > 0) await sleep(jitter(ACTION_GAP)); // 任务间随机间隔避风控
+        await run();
+    }
+    if (!ran) $.results.push("ℹ️ 所有任务均已在 BoxJS 关闭");
 
     $.msg("WPS 任务汇总", "", $.results.join("\n")); // $.msg 已把汇总打到日志,不再重复 $.log
 }
