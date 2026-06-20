@@ -59,7 +59,7 @@
 
 const $ = new Env("扫描全能王");
 
-const SCRIPT_VERSION = "2026-06-20.r2";
+const SCRIPT_VERSION = "2026-06-20.r3";
 $.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
 
 const CK_KEY     = 'camscanner_data';
@@ -316,7 +316,8 @@ function get(url, headers) {
             }
             try {
                 const j = JSON.parse(body);
-                $.log(`[HTTP] ${url.split('?')[0].split('/').pop()} → ${body.slice(0, 200)}`);
+                // 原始响应只在调试模式打印(BoxJS camscanner_debug=true),平时不刷屏
+                debug(body.slice(0, 300), url.split('?')[0].split('/').pop());
                 // 返回完整对象({ret, err, data}),让调用方自行判错+拆包
                 return resolve(j);
             } catch (e) {
