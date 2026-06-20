@@ -438,7 +438,8 @@
       "name": "一点万象",
       "keys": [
         "newmixc_data",
-        "newmixc_clear"
+        "newmixc_clear",
+        "newmixc_debug"
       ],
       "settings": [
         {
@@ -447,6 +448,23 @@
           "val": false,
           "type": "boolean",
           "desc": "设为开启后，运行一次签到脚本会清空已抓的 Cookie，完成后自动复位为关闭；之后重新抓取"
+        },
+        {
+          "id": "newmixc_debug",
+          "name": "调试模式",
+          "val": "false",
+          "type": "selects",
+          "items": [
+            {
+              "key": "false",
+              "label": "关闭"
+            },
+            {
+              "key": "true",
+              "label": "开启"
+            }
+          ],
+          "desc": "开启后打印签到接口原始响应"
         }
       ],
       "author": "@MaYIHEI",
@@ -795,7 +813,8 @@
       "name": "小米商城",
       "keys": [
         "mishop_data",
-        "mishop_clear"
+        "mishop_clear",
+        "mishop_debug"
       ],
       "settings": [
         {
@@ -804,6 +823,23 @@
           "val": false,
           "type": "boolean",
           "desc": "设为开启后，运行一次签到脚本会清空已抓的 Cookie，完成后自动复位为关闭；之后重新抓取"
+        },
+        {
+          "id": "mishop_debug",
+          "name": "调试模式",
+          "val": "false",
+          "type": "selects",
+          "items": [
+            {
+              "key": "false",
+              "label": "关闭"
+            },
+            {
+              "key": "true",
+              "label": "开启"
+            }
+          ],
+          "desc": "开启后打印签到接口原始响应"
         }
       ],
       "author": "@MaYIHEI",
@@ -829,7 +865,8 @@
       "name": "小米有品",
       "keys": [
         "youpin_data",
-        "youpin_clear"
+        "youpin_clear",
+        "youpin_debug"
       ],
       "settings": [
         {
@@ -838,6 +875,23 @@
           "val": false,
           "type": "boolean",
           "desc": "设为开启后，运行一次签到脚本会清空已抓的 Cookie，完成后自动复位为关闭；之后重新抓取"
+        },
+        {
+          "id": "youpin_debug",
+          "name": "调试模式",
+          "val": "false",
+          "type": "selects",
+          "items": [
+            {
+              "key": "false",
+              "label": "关闭"
+            },
+            {
+              "key": "true",
+              "label": "开启"
+            }
+          ],
+          "desc": "开启后打印签到接口原始响应"
         }
       ],
       "author": "@MaYIHEI",

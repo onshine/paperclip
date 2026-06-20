@@ -48,7 +48,7 @@
 
 const $ = new Env('小米商城');
 
-const SCRIPT_VERSION = "2026-06-07.r1"; // 改一次 +1,确认拉到最新版
+const SCRIPT_VERSION = "2026-06-20.r1"; // 改一次 +1,确认拉到最新版
 $.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
 
 const CK_KEY = 'mishop_data';
@@ -112,14 +112,14 @@ if (JSON.parse($.getdata("mishop_clear") || "false")) {
                 $.msg($.name, `✨ ${userId} 今日已签`, r1msg);
             } else {
                 $.msg($.name, `❌ ${userId} 签到失败`, `code=${r1.code} ${r1msg}`);
-                $.log(`do raw: ${JSON.stringify(r1).slice(0, 400)}`);
+                debug(`do raw: ${JSON.stringify(r1).slice(0, 400)}`);
             }
             $.done();
             return;
         }
 
         const taskToken = r1.data.taskToken;
-        $.log(`do 拿到 taskToken=${taskToken.slice(-10)}`);
+        debug(`do 拿到 taskToken=${taskToken.slice(-10)}`);
 
         // 2. 调 infinite/done 领奖
         const r2 = await post('/mtop/mf/act/infinite/done', ck, [
@@ -130,7 +130,7 @@ if (JSON.parse($.getdata("mishop_clear") || "false")) {
         if (!r2 || r2.code !== 0) {
             const m = (r2 && (r2.message || r2.msg)) || '响应异常';
             $.msg($.name, `⚠️ ${userId} 领奖失败`, `code=${r2 && r2.code} ${m}`);
-            $.log(`done raw: ${JSON.stringify(r2).slice(0, 400)}`);
+            debug(`done raw: ${JSON.stringify(r2).slice(0, 400)}`);
             $.done();
             return;
         }
@@ -173,14 +173,14 @@ function post(path, ck, bodyArr) {
         };
         $.post(opts, (err, resp, data) => {
             if (err) {
-                $.log(`[${path}] 错误: ${JSON.stringify(err)}`);
+                debug(`[${path}] 错误: ${JSON.stringify(err)}`);
                 resolve(null);
                 return;
             }
             try {
                 resolve(JSON.parse(data));
             } catch (e) {
-                $.log(`[${path}] 响应解析失败 status=${resp && resp.statusCode}: ${(data || '').slice(0, 300)}`);
+                debug(`[${path}] 响应解析失败 status=${resp && resp.statusCode}: ${(data || '').slice(0, 300)}`);
                 resolve(null);
             }
         });
@@ -205,6 +205,12 @@ function buildHeaders(ck) {
 
 
 // @Chavy Env
+// 调试日志:BoxJS 设 mishop_debug=true 才打印接口原始响应
+function debug(content) {
+    if (($.getdata("mishop_debug") || "false") !== "true") return;
+    $.log(`[DEBUG] ${typeof content === "string" ? content : JSON.stringify(content)}`);
+}
+
 function Env(s) {
     this.name = s;
     this.isSurge = () => typeof $httpClient !== 'undefined';

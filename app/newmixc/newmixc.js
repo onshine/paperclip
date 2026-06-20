@@ -52,7 +52,7 @@
 
 const $ = new Env("一点万象");
 
-const SCRIPT_VERSION = "2026-06-07.r1"; // 改一次 +1,确认拉到最新版
+const SCRIPT_VERSION = "2026-06-20.r1"; // 改一次 +1,确认拉到最新版
 $.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
 
 const CK_KEY = 'newmixc_data';
@@ -105,7 +105,7 @@ if (JSON.parse($.getdata("newmixc_clear") || "false")) {
             if (today && today.sign === 1) alreadySigned = true;
             $.log(`📋 状态: 今日${alreadySigned ? '已签' : '未签'},连签 ${status.data.continuousSign || 0} 天`);
         } else {
-            $.log(`⚠️ 状态查询异常: ${JSON.stringify(status).slice(0, 200)}`);
+            debug(`状态查询异常: ${JSON.stringify(status).slice(0, 200)}`);
         }
 
         if (alreadySigned) {
@@ -148,7 +148,7 @@ if (JSON.parse($.getdata("newmixc_clear") || "false")) {
                     }
                 }
             } catch (e) {
-                $.log('nextStep 调用异常,忽略: ' + e);
+                debug('nextStep 调用异常,忽略: ' + e);
             }
         }
 
@@ -204,17 +204,17 @@ function call(ck, action) {
             body: body,
         };
 
-        $.log(`[${action}] 发送 sign=${params.sign.slice(0, 8)}...`);
+        debug(`[${action}] 发送 sign=${params.sign.slice(0, 8)}...`);
         $.post(opts, (err, resp, data) => {
             if (err) {
-                $.log(`[${action}] 错误: ${JSON.stringify(err)}`);
+                debug(`[${action}] 错误: ${JSON.stringify(err)}`);
                 resolve(null);
                 return;
             }
             try {
                 resolve(JSON.parse(data));
             } catch (e) {
-                $.log(`[${action}] 响应解析失败: ${(data || '').slice(0, 300)}`);
+                debug(`[${action}] 响应解析失败: ${(data || '').slice(0, 300)}`);
                 resolve(null);
             }
         });
@@ -430,6 +430,12 @@ function md5(str) {
 }
 
 // @Chavy Env
+// 调试日志:BoxJS 设 newmixc_debug=true 才打印接口原始响应
+function debug(content) {
+    if (($.getdata("newmixc_debug") || "false") !== "true") return;
+    $.log(`[DEBUG] ${typeof content === "string" ? content : JSON.stringify(content)}`);
+}
+
 function Env(s) {
     this.name = s;
     this.isSurge = () => typeof $httpClient !== 'undefined';

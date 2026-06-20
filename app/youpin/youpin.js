@@ -52,7 +52,7 @@
 
 const $ = new Env("小米有品");
 
-const SCRIPT_VERSION = "2026-06-07.r1"; // 改一次 +1,确认拉到最新版
+const SCRIPT_VERSION = "2026-06-20.r1"; // 改一次 +1,确认拉到最新版
 $.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
 
 const CK_KEY  = 'youpin_data';
@@ -253,7 +253,7 @@ function post(url, headers, body) {
                 try {
                     resolve(JSON.parse(data));
                 } catch (e) {
-                    $.log(`⚠️ JSON 解析失败，原始响应: ${String(data).slice(0, 300)}`);
+                    debug(`JSON 解析失败，原始响应: ${String(data).slice(0, 300)}`);
                     reject(new Error('JSON parse error'));
                 }
             });
@@ -266,6 +266,12 @@ function maskToken(s) {
 }
 
 // ─── Env（轻量版，兼容 Loon / Surge / QX / Stash）────────────────────────────
+// 调试日志:BoxJS 设 youpin_debug=true 才打印接口原始响应
+function debug(content) {
+    if (($.getdata("youpin_debug") || "false") !== "true") return;
+    $.log(`[DEBUG] ${typeof content === "string" ? content : JSON.stringify(content)}`);
+}
+
 function Env(s) {
     this.name = s;
     this.isSurge = () => typeof $httpClient !== 'undefined';
