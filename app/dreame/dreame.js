@@ -13,14 +13,14 @@
  * hostname = cn-wxmall.dreame.tech
  * [Script]
  * http-request ^https:\/\/cn-wxmall\.dreame\.tech\/main\/my\/info tag=追觅 Cookie, script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/dreame/dreame.js, requires-body=true, img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/dreame.png
- * cron "33 8 * * *" script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/dreame/dreame.js, tag=追觅签到, img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/dreame.png
+ * cron "33 8 * * *" script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/dreame/dreame.js, tag=追觅签到, img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/dreame.png, enable=true
  *
  * ===== Surge =====
  * [MITM]
  * hostname = cn-wxmall.dreame.tech
  * [Script]
  * 追觅 Cookie = type=http-request,pattern=^https:\/\/cn-wxmall\.dreame\.tech\/main\/my\/info,requires-body=true,max-size=0,script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/dreame/dreame.js,img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/dreame.png
- * 追觅签到 = type=cron,cronexp="33 8 * * *",wake-system=1,timeout=60,script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/dreame/dreame.js,img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/dreame.png
+ * 追觅签到 = type=cron,cronexp=33 8 * * *,timeout=60,script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/dreame/dreame.js,img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/dreame.png
  *
  * ===== Quantumult X =====
  * [MITM]
@@ -31,6 +31,11 @@
  * 33 8 * * * https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/dreame/dreame.js, tag=追觅签到, img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/dreame.png, enabled=true
  *
  * ===== Stash =====
+ * cron:
+ *   script:
+ *     - name: 追觅签到
+ *       cron: '33 8 * * *'
+ *       timeout: 60
  * http:
  *   mitm:
  *     - "cn-wxmall.dreame.tech"
@@ -39,11 +44,10 @@
  *       name: 追觅 Cookie
  *       type: request
  *       require-body: true
- * cron:
- *   script:
- *     - name: 追觅签到
- *       cron: "33 8 * * *"
- *       timeout: 60
+ * script-providers:
+ *   追觅签到:
+ *     url: https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/dreame/dreame.js
+ *     interval: 86400
  */
 
 const $ = new Env("追觅");
