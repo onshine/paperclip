@@ -52,7 +52,7 @@
 
 const $ = new Env("WPS");
 
-const SCRIPT_VERSION = "2026-06-23.r4"; // 改一次 +1,确认拉到最新版
+const SCRIPT_VERSION = "2026-06-23.r5"; // 改一次 +1,确认拉到最新版
 $.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
 
 const CK_KEY = "wps_sid";
@@ -93,8 +93,8 @@ const COMPONENTS = {
     lottery: { component_number: "ZJ2025092916519174", component_node_id: "FN1779447163CApn", type: 45, session_id: 3002 },
     // 会员免费试用(瓜分奖品,次日开奖;每天可申领 2 次,先 preview 拿当天奖品再申领)
     trial: { component_number: "ZJ2025041115207603", component_node_id: "FN1744359116PWbV", type: 32 },
-    // 限量爆款领取(任选 1 个,服务端限每天 1 次;只领其中一项)
-    hot: { component_number: "ZJ2024110514212950", component_node_id: "FN1779689314rHQZ", type: 16 },
+    // 限量爆款「每天10点可领·任选1个」(privilege_select,每天 1 次机会;优先抢超级会员)
+    hot: { component_number: "ZJ2025041115200788", component_node_id: "FN1744358694RbIn", type: 31 },
 };
 
 const UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 WpsiOS/26.6.1";
@@ -290,84 +290,58 @@ async function fetchPageInfo() {
 function findComp(list, number, node) {
     return (list || []).find((c) => c && c.number === number && (!node || c.component_node_id === node)) || null;
 }
-// unix 秒 → 北京时间 MM-DD HH:MM(给「下次可领时刻」用)
-function fmtTime(sec) {
-    if (!sec) return "未知";
-    const d = new Date((sec + 8 * 3600) * 1000);
-    const p = (n) => String(n).padStart(2, "0");
-    return `${p(d.getUTCMonth() + 1)}-${p(d.getUTCDate())} ${p(d.getUTCHours())}:${p(d.getUTCMinutes())}`;
-}
 
-// ============ 任务:限量爆款领取(privilege_grant,每日 10:00 刷新窗口)============
-// 爆款是按账号每日限领、窗口固定每天 10:00 刷新(next_receive_time = 下次可领时刻)。
-// 不写死单个 node_id:扫爆款组件下的全部 privilege_grant 节点,自己挑「能领的」抢——
-//   ① WPS 每期换 node_id/privilege_id,只要组件号不变就能跟上,不会哪天突然抢失效的旧 node;
-//   ② 抢光(status 2 / stock 0)、需年卡(status 17)的自动跳过,不浪费请求;
-//   ③ 窗口边界处理:cron 正好 10:00 常卡在窗口「刚要开」→ 读 next_receive_time:已开直接领、
-//      差几十秒等开了再领、下次在很久后(次日)说明今天已领过才算 ✅。失败按真实 desc 报准。
-const HOT_WAIT_MAX = 75; // 最多等待窗口开启的秒数(再久不阻塞,避免 Surge/Stash 120s cron 超时)
-
+// ============ 任务:限量爆款「每天10点可领·任选1个」(privilege_select)============
+// 福利中心「限量爆款」是 3 选 1:超级会员1小时(限量,秒光)/ WPS积分2 / WPS积分1,每天 1 次机会。
+// 价值排序:超级会员 ≫ 积分,所以优先抢超级会员,抢不到(已秒光)再退而求其次拿积分,别浪费当天机会。
+//   - 每个选项的 group_id / privilege_id 从 page_info 的 privilege_select_details 读(不硬编码,换期也跟得上);
+//   - 选项打分:会员(privilege_type=="privilege")最高,其余按 hours/积分数排序;按分从高到低逐个尝试;
+//   - select_reach_limit==true = 今天这 1 次已用掉 → 直接 ✅;
+//   - 超级会员限 1200 份、10:00 一开几分钟就光,必须靠 hot 排首位踩整点抢。
 async function taskHot() {
     const tag = "限量爆款";
+    const comp = COMPONENTS.hot;
     try {
         const list = await fetchPageInfo();
         if (!list) { $.results.push(`❌ ${tag}:page_info 无响应`); return; }
+        const node = findComp(list, comp.component_number, comp.component_node_id);
+        const ps = (node && node.privilege_select) || {};
+        const details = ps.privilege_select_details || [];
+        if (!details.length) { $.results.push(`⚠️ ${tag}:未找到爆款组件(可能已换期,需重抓)`); return; }
 
-        // 爆款组件下的所有 privilege_grant 节点(组件号稳定,node_id 每期变)
-        const nodes = list.filter((c) => c && c.type === 16 && c.number === COMPONENTS.hot.component_number);
-        if (!nodes.length) { $.results.push(`⚠️ ${tag}:未找到爆款组件(可能已换期,需重抓)`); return; }
+        // 今天这次机会已用掉
+        if (ps.select_reach_limit) { $.results.push(`✅ ${tag}:已领取(今日已选)`); return; }
 
-        let eligible = 0, waited = false;
-        for (const node of nodes) {
-            const pg = node.privilege_grant || {};
-            if (pg.status === 2 || pg.stock === 0) continue;   // 抢光,跳过
-            if (pg.status === 17) continue;                    // 需年卡(无资格),跳过
-            eligible++;
+        // 按价值排序:会员优先,其次积分多的优先(hours*100 + nums,会员再加底分)
+        const score = (d) => (d.privilege_type === "privilege" ? 10000 : 0) + (d.hours || 0) * 100 + (d.nums || 0);
+        const ranked = details.slice().sort((a, b) => score(b) - score(a));
 
-            const now = pg.server_time || Math.floor(Date.now() / 1000);
-            const delta = pg.next_receive_time ? pg.next_receive_time - now : 0;
-            if (delta > HOT_WAIT_MAX) {
-                // 下次可领在很久后(次日)= 今天已领过,正常完结
-                $.results.push(`✅ ${tag}:已领取(今日已领,下次 ${fmtTime(pg.next_receive_time)})`);
-                continue;
-            }
-            if (delta > 0 && !waited) {
-                // 窗口马上开(整点边界):只等一次,避免多 node 累加等待撑爆 cron 超时
-                debug(`${tag} 等待窗口开启 ${delta}s(node ${node.component_node_id})`);
-                await sleep((delta + 3) * 1000);
-                waited = true;
-            }
-
+        let done = false;
+        for (const d of ranked) {
             const reqObj = {
                 component_uniq_number: {
                     activity_number: FLZX.activity_number,
                     page_number: FLZX.page_number,
-                    component_number: node.number,
-                    component_node_id: node.component_node_id,
+                    component_number: comp.component_number,
+                    component_node_id: comp.component_node_id,
                 },
-                component_type: 16,
-                component_action: "privilege_grant.exec",
+                component_type: comp.type,
+                component_action: "privilege_select.exec",
+                // group_id 与 privilege_id 各选项不一定相等(会员是 1/101),都取自 detail
+                privilege_select: { group_id: d.group_id, privilege_id: d.privilege_id },
             };
             const r = await httpReq("POST", COMPONENT, { body: JSON.stringify(reqObj) });
             const j = safeJson(r.body);
-            const inner = (j && j.data && j.data.privilege_grant) || {};
+            const inner = (j && j.data && j.data.privilege_select) || {};
             if (j && j.result === "ok" && inner.success === true) {
-                $.results.push(`✅ ${tag}:成功${inner.reward_name ? " " + inner.reward_name : ` (pid ${pg.privilege_id})`}`);
-                continue;
+                $.results.push(`✅ ${tag}:成功 ${d.title || "pid " + d.privilege_id}`);
+                done = true;
+                break;
             }
-            // 失败:按服务端真实 desc 给准确原因(不再把没领到粉饰成 ✅)
-            const desc = String(inner.desc || (j && j.msg) || "").toLowerCase();
-            if (/out of limit|超过|上限/.test(desc)) {
-                $.results.push(`⚠️ ${tag}:未领到(窗口未开/已限领,下次 ${fmtTime(inner.next_receive_time || pg.next_receive_time)})`);
-            } else if (inner.stock === 0 || /no stock|sold out|售罄|库存|领完/.test(desc)) {
-                $.results.push(`⚠️ ${tag}:已领完`);
-            } else {
-                const st = classify(inner.desc || (j && j.msg), "已领取");
-                $.results.push(`${st.e} ${tag}:${st.t}`);
-            }
-            debug(`${tag} 响应(node ${node.component_node_id}): ${(r.body || "").slice(0, 300)}`);
+            // 这档没抢到(多半已秒光)→ 记一笔继续抢下一档
+            debug(`${tag} ${d.title}(pid ${d.privilege_id})未中: ${(r.body || "").slice(0, 200)}`);
         }
-        if (!eligible) $.results.push(`⚠️ ${tag}:无可领(均已抢光或需年卡)`);
+        if (!done) $.results.push(`⚠️ ${tag}:未领到(超级会员已秒光、其余也没抢到)`);
     } catch (e) {
         $.results.push(`❌ ${tag}:异常`);
         $.log(`[ERROR] ${tag}: ${e}`);
