@@ -52,7 +52,7 @@
 
 const $ = new Env("一点万象");
 
-const SCRIPT_VERSION = "2026-06-20.r1"; // 改一次 +1,确认拉到最新版
+const SCRIPT_VERSION = "2026-06-23.r1"; // 改一次 +1,确认拉到最新版
 $.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
 
 const CK_KEY = 'newmixc_data';
@@ -98,6 +98,7 @@ if (JSON.parse($.getdata("newmixc_clear") || "false")) {
     try {
         // 1. 查签到状态
         const status = await call(ck, 'mixc.app.memberSign.latticeList');
+        debug(`latticeList 完整返回: ${JSON.stringify(status)}`);
         let alreadySigned = false;
         if (status && status.code === 0 && status.data && Array.isArray(status.data.signPointList)) {
             const todayStr = formatDate(new Date());
@@ -117,6 +118,7 @@ if (JSON.parse($.getdata("newmixc_clear") || "false")) {
 
         // 2. 执行签到
         const r = await call(ck, 'mixc.app.memberSign.sign');
+        debug(`sign 完整返回: ${JSON.stringify(r)}`);
         if (!r || r.code !== 0) {
             const m = (r && (r.message || r.msg)) || JSON.stringify(r).slice(0, 200);
             // 兜底: 接口可能用其它字段表达"已签"
