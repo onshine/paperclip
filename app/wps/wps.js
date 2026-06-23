@@ -52,7 +52,7 @@
 
 const $ = new Env("WPS");
 
-const SCRIPT_VERSION = "2026-06-23.r3"; // 改一次 +1,确认拉到最新版
+const SCRIPT_VERSION = "2026-06-23.r4"; // 改一次 +1,确认拉到最新版
 $.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
 
 const CK_KEY = "wps_sid";
@@ -299,66 +299,75 @@ function fmtTime(sec) {
 }
 
 // ============ 任务:限量爆款领取(privilege_grant,每日 10:00 刷新窗口)============
-// 这个奖品按账号每日限领,领取窗口固定在每天 10:00 刷新(next_receive_time = 下次可领时刻)。
-// 坑:cron 正好 10:00 触发,常卡在窗口「刚要开」的边界 → 服务端回 out of limit,旧实现把它
-//   误判成 ✅已达上限,其实没领到(只能手动补领)。改为先读 next_receive_time 判断窗口状态:
-//   已开→直接领;还差几十秒→等开了再领;若下次在很久后(次日)→说明今天确实已领过,才算 ✅。
-//   领取失败一律按服务端真实 desc 给准确原因,绝不再把「没领到」粉饰成 ✅。
+// 爆款是按账号每日限领、窗口固定每天 10:00 刷新(next_receive_time = 下次可领时刻)。
+// 不写死单个 node_id:扫爆款组件下的全部 privilege_grant 节点,自己挑「能领的」抢——
+//   ① WPS 每期换 node_id/privilege_id,只要组件号不变就能跟上,不会哪天突然抢失效的旧 node;
+//   ② 抢光(status 2 / stock 0)、需年卡(status 17)的自动跳过,不浪费请求;
+//   ③ 窗口边界处理:cron 正好 10:00 常卡在窗口「刚要开」→ 读 next_receive_time:已开直接领、
+//      差几十秒等开了再领、下次在很久后(次日)说明今天已领过才算 ✅。失败按真实 desc 报准。
 const HOT_WAIT_MAX = 75; // 最多等待窗口开启的秒数(再久不阻塞,避免 Surge/Stash 120s cron 超时)
 
 async function taskHot() {
     const tag = "限量爆款";
-    const comp = COMPONENTS.hot;
     try {
         const list = await fetchPageInfo();
-        const node = findComp(list, comp.component_number, comp.component_node_id);
-        const pg = (node && node.privilege_grant) || {};
-        const now = pg.server_time || Math.floor(Date.now() / 1000);
-        const delta = pg.next_receive_time ? pg.next_receive_time - now : 0;
+        if (!list) { $.results.push(`❌ ${tag}:page_info 无响应`); return; }
 
-        if (delta > HOT_WAIT_MAX) {
-            // 下次可领在很久之后(次日 10:00)= 今天已经领过了,正常完结
-            $.results.push(`✅ ${tag}:已领取(今日已领,下次 ${fmtTime(pg.next_receive_time)})`);
-            return;
-        }
-        if (delta > 0) {
-            // 窗口马上就开(整点 cron 的边界):等到开了再领,避免白白撞一次 out of limit
-            debug(`${tag} 等待窗口开启 ${delta}s(下次 ${fmtTime(pg.next_receive_time)})`);
-            await sleep((delta + 3) * 1000);
-        }
+        // 爆款组件下的所有 privilege_grant 节点(组件号稳定,node_id 每期变)
+        const nodes = list.filter((c) => c && c.type === 16 && c.number === COMPONENTS.hot.component_number);
+        if (!nodes.length) { $.results.push(`⚠️ ${tag}:未找到爆款组件(可能已换期,需重抓)`); return; }
 
-        const reqObj = {
-            component_uniq_number: {
-                activity_number: FLZX.activity_number,
-                page_number: FLZX.page_number,
-                component_number: comp.component_number,
-                component_node_id: comp.component_node_id,
-            },
-            component_type: comp.type,
-            component_action: "privilege_grant.exec",
-        };
-        const r = await httpReq("POST", COMPONENT, { body: JSON.stringify(reqObj) });
-        const j = safeJson(r.body);
-        const inner = (j && j.data && j.data.privilege_grant) || {};
-        if (j && j.result === "ok" && inner.success === true) {
-            $.results.push(`✅ ${tag}:成功${inner.reward_name ? " " + inner.reward_name : ""}`);
-            return;
-        }
+        let eligible = 0, waited = false;
+        for (const node of nodes) {
+            const pg = node.privilege_grant || {};
+            if (pg.status === 2 || pg.stock === 0) continue;   // 抢光,跳过
+            if (pg.status === 17) continue;                    // 需年卡(无资格),跳过
+            eligible++;
 
-        // 失败:按服务端 desc/status 给准确原因(不再把 out of limit 误报成 ✅)
-        const desc = String(inner.desc || (j && j.msg) || "").toLowerCase();
-        const nrt = inner.next_receive_time || pg.next_receive_time;
-        if (/out of limit|超过|上限/.test(desc)) {
-            $.results.push(`⚠️ ${tag}:未领到(窗口未开/已限领,下次 ${fmtTime(nrt)})`);
-        } else if (inner.stock === 0 || /no stock|sold out|售罄|库存|领完/.test(desc)) {
-            $.results.push(`⚠️ ${tag}:已领完`);
-        } else if (inner.status === 17 || /year order|年卡|资格/.test(desc)) {
-            $.results.push(`⚠️ ${tag}:没资格(需年卡会员)`);
-        } else {
-            const st = classify(inner.desc || (j && j.msg), "已领取");
-            $.results.push(`${st.e} ${tag}:${st.t}`);
+            const now = pg.server_time || Math.floor(Date.now() / 1000);
+            const delta = pg.next_receive_time ? pg.next_receive_time - now : 0;
+            if (delta > HOT_WAIT_MAX) {
+                // 下次可领在很久后(次日)= 今天已领过,正常完结
+                $.results.push(`✅ ${tag}:已领取(今日已领,下次 ${fmtTime(pg.next_receive_time)})`);
+                continue;
+            }
+            if (delta > 0 && !waited) {
+                // 窗口马上开(整点边界):只等一次,避免多 node 累加等待撑爆 cron 超时
+                debug(`${tag} 等待窗口开启 ${delta}s(node ${node.component_node_id})`);
+                await sleep((delta + 3) * 1000);
+                waited = true;
+            }
+
+            const reqObj = {
+                component_uniq_number: {
+                    activity_number: FLZX.activity_number,
+                    page_number: FLZX.page_number,
+                    component_number: node.number,
+                    component_node_id: node.component_node_id,
+                },
+                component_type: 16,
+                component_action: "privilege_grant.exec",
+            };
+            const r = await httpReq("POST", COMPONENT, { body: JSON.stringify(reqObj) });
+            const j = safeJson(r.body);
+            const inner = (j && j.data && j.data.privilege_grant) || {};
+            if (j && j.result === "ok" && inner.success === true) {
+                $.results.push(`✅ ${tag}:成功${inner.reward_name ? " " + inner.reward_name : ` (pid ${pg.privilege_id})`}`);
+                continue;
+            }
+            // 失败:按服务端真实 desc 给准确原因(不再把没领到粉饰成 ✅)
+            const desc = String(inner.desc || (j && j.msg) || "").toLowerCase();
+            if (/out of limit|超过|上限/.test(desc)) {
+                $.results.push(`⚠️ ${tag}:未领到(窗口未开/已限领,下次 ${fmtTime(inner.next_receive_time || pg.next_receive_time)})`);
+            } else if (inner.stock === 0 || /no stock|sold out|售罄|库存|领完/.test(desc)) {
+                $.results.push(`⚠️ ${tag}:已领完`);
+            } else {
+                const st = classify(inner.desc || (j && j.msg), "已领取");
+                $.results.push(`${st.e} ${tag}:${st.t}`);
+            }
+            debug(`${tag} 响应(node ${node.component_node_id}): ${(r.body || "").slice(0, 300)}`);
         }
-        debug(`${tag} 响应: ${(r.body || "").slice(0, 300)}`);
+        if (!eligible) $.results.push(`⚠️ ${tag}:无可领(均已抢光或需年卡)`);
     } catch (e) {
         $.results.push(`❌ ${tag}:异常`);
         $.log(`[ERROR] ${tag}: ${e}`);
@@ -377,18 +386,11 @@ async function taskFragment() {
         const today = beijingDate();
 
         // 1) 取当前序列状态:page_info 返回各组件,fragment 组件挂 sign_series_id + sign_records
-        const pi = await httpReq("GET",
-            `${PAGE_INFO}?activity_number=${FLZX.activity_number}&page_number=${FLZX.page_number}`);
-        const pj = safeJson(pi.body);
-        let seriesId = "", records = [];
-        if (pj && pj.result === "ok" && Array.isArray(pj.data)) {
-            const node = pj.data.find((c) => c && c.number === comp.component_number);
-            const fc = (node && node.fragment_collect) || {};
-            seriesId = fc.sign_series_id || "";
-            records = fc.sign_records || [];
-        } else {
-            debug(`${tag} page_info 异常: ${pi.body.slice(0, 300)}`);
-        }
+        const list = await fetchPageInfo();
+        const node = findComp(list, comp.component_number);
+        const fc = (node && node.fragment_collect) || {};
+        const seriesId = fc.sign_series_id || "";
+        const records = fc.sign_records || [];
 
         // 今天已签则跳过(sign_records 里今天 sign_status==signed)
         const todayRec = records.find((r) => r && r.sign_date === today);
