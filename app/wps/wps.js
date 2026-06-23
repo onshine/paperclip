@@ -52,7 +52,7 @@
 
 const $ = new Env("WPS");
 
-const SCRIPT_VERSION = "2026-06-23.r2"; // 改一次 +1,确认拉到最新版
+const SCRIPT_VERSION = "2026-06-23.r3"; // 改一次 +1,确认拉到最新版
 $.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
 
 const CK_KEY = "wps_sid";
@@ -157,11 +157,12 @@ async function main() {
 
     // 任务清单:每项可在 BoxJS 单独开关(默认开;关闭则整项跳过,连同它的随机间隔)。
     // 10 点 cron 触发,逐个串行、动作间随机间隔(模拟真人,避风控)。
-    // 顺序讲究:① 小程序打卡放最前——它走 personal-bus 域 + Signature 签名,是最敏感的请求,
-    //   排在一串 activity-rubik 突发请求之后易被短暂限流(整点 cron 必挂、手动重跑就好),故趁
-    //   session 干净时第一个签;② 限量爆款紧随其后(库存少,只差一个随机间隔基本不影响抢)。
+    // 顺序讲究(两端时间需求相反):
+    //   ① 限量爆款放最前——库存少,10:00 窗口一开就得抢,晚了没了,绝不能让它等;
+    //   ② 小程序打卡放最后——它走 personal-bus 域,整点 10:00:00 有后端尖峰偶发
+    //      invalid connection,排最后离尖峰最远(被前面任务自然往后挪几十秒),再叠加它
+    //      自带的「开头随机错峰 + 4 次退避重试」兜底(即便单独开它也靠这两层扛尖峰)。
     const tasks = [
-        ["wps_task_clockin", () => taskClockIn()],
         ["wps_task_hot", () => taskHot()],
         ["wps_task_trial", () => taskTrial()],
         ["wps_task_signin", () => taskSignIn(uid)],
@@ -169,6 +170,7 @@ async function main() {
         ["wps_task_lottery", () => taskComponent("天天抽奖", COMPONENTS.lottery, "lottery_v2.exec", {
             lottery_v2: { session_id: COMPONENTS.lottery.session_id },
         }, "已完成")],
+        ["wps_task_clockin", () => taskClockIn()],
     ];
     // 打印每个开关实际读到的原始值(排查 BoxJS 是否生效:null=未设置默认开)
     $.log(`[INFO] 任务开关 ${tasks.map(([k]) => `${k.slice(9)}=${JSON.stringify($.getdata(k))}`).join(" ")}`);
@@ -506,7 +508,7 @@ async function taskClockIn() {
     try {
         const sid = $.getdata(CK_KEY);
 
-        // 排在任务首位、整点 cron 会精确撞上 10:00:00 的后端尖峰 → 先错峰几秒再打首个请求
+        // 整点 cron 可能精确撞上 10:00:00 的后端尖峰(尤其只单独开这一项时)→ 先错峰几秒再打首个请求
         await sleep(jitter([3, 10]));
 
         // 动态盐 ss(配置端点在 CDN,不需登录);整点 cron 易撞网络抖动 → 与 s_key 一样重试
