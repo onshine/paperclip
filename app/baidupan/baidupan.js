@@ -1,7 +1,7 @@
 /**
- * 百度网盘 · 金币中心每日签到,得金币 + 成长值,支持连签奖励
+ * 百度网盘 · 每日签到,得金币 + 成长值,支持连签奖励
  *
- * 抓取:打开百度网盘 APP →「我的」→「金币中心 / 签到」页面停留 1 秒,抓 Cookie
+ * 抓取:打开百度网盘 APP →「我的」→「签到」页面停留 1 秒,抓 Cookie
  * 签到:cron 定时自动签到(每日签到领奖)
  *
  * @Author: MaYIHEI <https://github.com/MaYIHEI/paperclip>
@@ -94,12 +94,12 @@ if (typeof $request !== "undefined") {
 }
 
 // ─── 抓 Cookie ───────────────────────────────────────────────────────────────
-// 触发条件: 打开网盘「金币中心 / 签到」页,signinlist 请求带完整 Cookie(BDUSS/STOKEN)+ 设备参数
+// 触发条件: 打开网盘「我的 → 签到」页,signinlist 请求带完整 Cookie(BDUSS/STOKEN)+ 设备参数
 function getCookie() {
     const cookie = normalizeCookie(headerVal('cookie'));
     if (!cookie || !/BDUSS=/.test(cookie)) {
         $.msg($.name, '⚠️ 未抓到有效 Cookie',
-            '请确认已开启 MITM 并打开网盘「我的 → 金币中心 / 签到」页');
+            '请确认已开启 MITM 并打开网盘「我的 → 签到」页');
         return;
     }
 
@@ -126,7 +126,7 @@ async function main() {
     const raw = $.getdata(CK_KEY);
     if (!raw) {
         $.msg($.name, '🚫 缺少 Cookie',
-            '请先开启重写规则,打开网盘「我的 → 金币中心 / 签到」页面');
+            '请先开启重写规则,打开网盘「我的 → 签到」页面');
         return;
     }
 
