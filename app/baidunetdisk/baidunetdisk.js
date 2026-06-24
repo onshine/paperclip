@@ -52,7 +52,7 @@
 
 const $ = new Env("百度网盘");
 
-const SCRIPT_VERSION = "2026-06-24.r2"; // 改一次 +1,确认拉到最新版
+const SCRIPT_VERSION = "2026-06-24.r3"; // 改一次 +1,确认拉到最新版
 $.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
 
 const CK_KEY = 'baidunetdisk_data';
@@ -69,6 +69,12 @@ const MEMBER_APPID = '250528';
 const LEVEL_THRESHOLDS = {
     2: 1000, 3: 3000, 4: 7000, 5: 15000, 6: 27000,
     7: 43000, 8: 56000, 9: 68000, 10: 100000,
+};
+// 每日会员成长值(按购买的产品类型给,与等级无关;有效期内不衰减)→ 估算到 SVIP10 还要几天
+const DAILY_GROWTH = {
+    vip2_1m: 20, vip2_1m_auto: 20, vip2_1y: 30, vip2_1y_auto: 30,
+    vip2_3m: 20, vip2_3m_auto: 20, vip2_7d_1m_auto: 20, vip2_vipv2_upgrade_svip: 20,
+    vip1_1m: 5, vip1_1y: 12, vip1_3m: 10,
 };
 
 // 抓取时要随 Cookie 一起存下来的设备参数(都来自签到页 URL,非签名,过期不了)
@@ -159,9 +165,12 @@ async function main() {
         return;
     }
     const ld = list.data || {};
+    // 今日签到送的成长值(签到日历里今天那格的成长值奖励,type 3),也作每日净增的签到部分
+    const gain = signinGrowth(ld);
+
     if (ld.signed_today === 1) {
         $.msg($.name, '✨ 今日已签到',
-            `连签 ${ld.signin_days || 0} 天${await growthTail(ck)}`);
+            `连签 ${ld.signin_days || 0} 天${await growthTail(ck, gain)}`);
         return;
     }
 
@@ -174,10 +183,8 @@ async function main() {
         return;
     }
 
-    // 今日签到送的成长值(签到日历里今天那格的成长值奖励,type 3)
-    const gain = signinGrowth(ld);
     const head = gain ? `签到 +${gain} 成长值` : '签到成功';
-    $.msg($.name, '✅ 百度网盘签到成功', `${head}${await growthTail(ck)}`);
+    $.msg($.name, '✅ 百度网盘签到成功', `${head}${await growthTail(ck, gain)}`);
 }
 
 // 从签到日历里取今日签到送的成长值(type 3 = 成长值,type 10 = 金币)
@@ -192,8 +199,8 @@ function signinGrowth(d) {
     }
 }
 
-// 拼「会员成长值 / 等级 / 距下一级」尾巴(签到主要是为了升级,失败不影响主结果)
-async function growthTail(ck) {
+// 拼「会员成长值 / 等级 / 距下一级 + 估算天数」尾巴(签到主要是为了升级,失败不影响主结果)
+async function growthTail(ck, signinGain) {
     try {
         const m = await queryMember(ck);
         const d = m && m.level_info;
@@ -201,8 +208,16 @@ async function growthTail(ck) {
             const L = d.current_level, V = d.current_value;
             let t = ` · SVIP${L} 成长值 ${V}`;
             const next = LEVEL_THRESHOLDS[L + 1];
-            if (next != null && V != null) t += ` · 距 SVIP${L + 1} 还差 ${next - V}`;
-            else t += ' · 已满级';
+            if (next != null && V != null) {
+                const gap = next - V;
+                t += ` · 距 SVIP${L + 1} 还差 ${gap}`;
+                // 每日净增 = 会员每日成长(按产品类型)+ 今日签到成长值,估算还要几天
+                const ptype = m.current_product && m.current_product.product_type;
+                const perDay = (DAILY_GROWTH[ptype] || 0) + (signinGain || 0);
+                if (perDay > 0 && gap > 0) t += `(约 ${Math.ceil(gap / perDay)} 天)`;
+            } else {
+                t += ' · 已满级';
+            }
             return t;
         }
     } catch (e) {
