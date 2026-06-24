@@ -1,7 +1,7 @@
 /**
  * 追觅 · 追觅商城每日签到,得积分 / 成长值,支持连签奖励
  *
- * 抓取:打开「追觅」APP → 进入「商城」或「我的」,任意一次带 sessid 的请求即自动保存
+ * 抓取:打开「追觅」APP →「商城」或「我的」页停留 1 秒(自动触发 my/info),抓 Cookie
  * 签到:cron 定时自动签到
  *
  * @Author: MaYIHEI <https://github.com/MaYIHEI/paperclip>
@@ -12,21 +12,21 @@
  * [MITM]
  * hostname = cn-wxmall.dreame.tech
  * [Script]
- * http-request ^https:\/\/cn-wxmall\.dreame\.tech\/main\/ tag=追觅 Cookie, script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/dreame/dreame.js, requires-body=true, img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/dreame.png
+ * http-request ^https:\/\/cn-wxmall\.dreame\.tech\/main\/my\/info tag=追觅 Cookie, script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/dreame/dreame.js, requires-body=true, img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/dreame.png
  * cron "33 8 * * *" script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/dreame/dreame.js, tag=追觅签到, img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/dreame.png, enable=true
  *
  * ===== Surge =====
  * [MITM]
  * hostname = cn-wxmall.dreame.tech
  * [Script]
- * 追觅 Cookie = type=http-request,pattern=^https:\/\/cn-wxmall\.dreame\.tech\/main\/,requires-body=true,max-size=0,script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/dreame/dreame.js,img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/dreame.png
+ * 追觅 Cookie = type=http-request,pattern=^https:\/\/cn-wxmall\.dreame\.tech\/main\/my\/info,requires-body=true,max-size=0,script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/dreame/dreame.js,img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/dreame.png
  * 追觅签到 = type=cron,cronexp=33 8 * * *,timeout=60,script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/dreame/dreame.js,img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/dreame.png
  *
  * ===== Quantumult X =====
  * [MITM]
  * hostname = cn-wxmall.dreame.tech
  * [rewrite_local]
- * ^https:\/\/cn-wxmall\.dreame\.tech\/main\/ url script-request-body https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/dreame/dreame.js
+ * ^https:\/\/cn-wxmall\.dreame\.tech\/main\/my\/info url script-request-body https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/dreame/dreame.js
  * [task_local]
  * 33 8 * * * https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/dreame/dreame.js, tag=追觅签到, img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/dreame.png, enabled=true
  *
@@ -40,7 +40,7 @@
  *   mitm:
  *     - "cn-wxmall.dreame.tech"
  *   script:
- *     - match: ^https:\/\/cn-wxmall\.dreame\.tech\/main\/
+ *     - match: ^https:\/\/cn-wxmall\.dreame\.tech\/main\/my\/info
  *       name: 追觅 Cookie
  *       type: request
  *       require-body: true
@@ -104,11 +104,18 @@ function getCookie() {
     }
 
     const sessid = params.sessid;
-    if (!sessid) return; // 大多数请求不带 sessid,静默跳过
+    if (!sessid) {
+        $.msg($.name, '⚠️ 未提取到 sessid',
+            '请确认已开启 MITM 并打开追觅「商城 / 我的」页面');
+        return;
+    }
 
     // user_id 优先取 body,兜底从 sessid(JWT)的 sub 里解
     const userId = params.user_id || userIdFromJwt(sessid) || '';
-    if (!userId) return; // 极少情况,静默跳过等下一次有效请求
+    if (!userId) {
+        $.msg($.name, '⚠️ 未提取到 user_id', '请重新打开页面再试');
+        return;
+    }
 
     $.setdata(JSON.stringify({ sessid, user_id: userId }), CK_KEY);
     $.msg($.name, '✅ 追觅 Cookie 获取成功',
