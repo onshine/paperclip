@@ -52,7 +52,7 @@
 
 const $ = new Env("追觅");
 
-const SCRIPT_VERSION = "2026-06-25.r1"; // 改一次 +1,确认拉到最新版
+const SCRIPT_VERSION = "2026-06-25.r2"; // 改一次 +1,确认拉到最新版
 $.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
 
 const CK_KEY = 'dreame_data';
@@ -272,7 +272,10 @@ function userIdFromJwt(jwt) {
     try {
         const parts = String(jwt).split('.');
         if (parts.length < 2) return '';
-        const payload = JSON.parse(b64decode(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+        const b64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+        // atob on iOS requires length to be a multiple of 4
+        const padded = b64 + '='.repeat((4 - b64.length % 4) % 4);
+        const payload = JSON.parse(b64decode(padded));
         const sub = payload.sub || {};
         return sub.user_id || sub.uid || '';
     } catch (e) {
