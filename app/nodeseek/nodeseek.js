@@ -2,7 +2,12 @@
  * NodeSeek · 每日签到
  *
  * 抓取：用 Safari 打开 nodeseek.com 任意页面（需先配置 Cookie 抓取脚本）
- * 签到：cron 定时自动签到，随机/固定奖励可在 BoxJS 中切换
+ * 签到：cron 定时自动签到；需在 BoxJS 中配置 VPS 服务地址与密钥
+ *
+ * BoxJS 配置项：
+ *   nodeseek_vps_url  — VPS 服务地址，例：https://ns-attend.example.com
+ *   nodeseek_vps_key  — VPS API 密钥（与服务端 API_KEY 一致）
+ *   nodeseek_random   — true/false，是否随机积分（默认 false）
  *
  * @Author: MaYIHEI <https://github.com/MaYIHEI/paperclip>
  * @Channel: Telegram 频道 https://t.me/mayihei
@@ -52,17 +57,14 @@
 
 const $ = new Env("NodeSeek");
 
-const SCRIPT_VERSION = "2026-06-25.r2";
+const SCRIPT_VERSION = "2026-06-25.r3";
 $.log("[INFO] 脚本版本 " + SCRIPT_VERSION);
 
-const CK_KEY = "nodeseek_cookie";
-const PING_URL = "https://www.nodeseek.com/edge-cgi/ping";
-const UA = "Mozilla/5.0 (iPhone; CPU iPhone OS 18_7 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/26.1 Mobile/15E148 Safari/604.1";
-const REFRACT_VERSION = "0.3.33";
-const REFRACT_INIT_KEY = "CHICZkKViFoZmVbIH1Y6";
+const CK_KEY      = "nodeseek_cookie";
+const VPS_URL_KEY = "nodeseek_vps_url";
+const VPS_KEY_KEY = "nodeseek_vps_key";
 
 const useRandom = ($.getdata("nodeseek_random") || "false") === "true";
-const ATTEND_URL = "https://www.nodeseek.com/api/attendance?random=" + (useRandom ? "true" : "false");
 
 (async () => {
     const cookie = $.getdata(CK_KEY) || "";
@@ -71,25 +73,25 @@ const ATTEND_URL = "https://www.nodeseek.com/api/attendance?random=" + (useRando
         $.done();
         return;
     }
-
-    $.log("[INFO] 正在获取 refract-key...");
-    let newKey;
-    try {
-        newKey = await ping(cookie);
-    } catch (e) {
-        $.msg("NodeSeek", "❌ 网络异常", String(e));
-        $.done();
-        return;
-    }
-    if (!newKey) {
-        $.msg("NodeSeek", "❌ 获取 refract-key 失败", "ping 无响应");
+    if (!cookie.includes("pjwt")) {
+        $.msg("NodeSeek", "🚫 Cookie 无效", "缺少 pjwt，请重新抓取");
         $.done();
         return;
     }
 
-    $.log("[INFO] refract-key 已获取，开始签到...");
+    const vpsUrl = ($.getdata(VPS_URL_KEY) || "").trim().replace(/\/$/, "");
+    const vpsKey = ($.getdata(VPS_KEY_KEY) || "").trim();
+
+    if (!vpsUrl) {
+        $.msg("NodeSeek", "🚫 未配置 VPS 服务", "请在 BoxJS 中填写 nodeseek_vps_url");
+        $.done();
+        return;
+    }
+
+    $.log("[INFO] 调用 VPS 签到服务...");
+
     try {
-        await attend(cookie, newKey);
+        await attend(cookie, vpsUrl, vpsKey, useRandom);
     } catch (e) {
         $.msg("NodeSeek", "❌ 签到异常", String(e));
     }
@@ -97,116 +99,44 @@ const ATTEND_URL = "https://www.nodeseek.com/api/attendance?random=" + (useRando
     $.done();
 })();
 
-function ping(cookie) {
-    return new Promise((resolve, reject) => {
-        const sign = refractSign("GET", PING_URL, "", REFRACT_INIT_KEY);
-        $.get({
-            url: PING_URL,
-            headers: {
-                "User-Agent": UA,
-                "refract-version": REFRACT_VERSION,
-                "refract-key": REFRACT_INIT_KEY,
-                "refract-sign": sign,
-                "accept": "*/*",
-                "cookie": cookie,
-            },
-        }, (err, resp, data) => {
-            if (err) return reject(err);
-            const h = resp.headers || {};
-            const key = h["refract-key-update"] || h["Refract-Key-Update"] || h["REFRACT-KEY-UPDATE"] || "";
-            $.log("[INFO] ping status=" + resp.status + " key=" + (key ? key.substring(0, 16) + "..." : "none"));
-            resolve(key);
-        });
-    });
-}
-
-function attend(cookie, key) {
+function attend(cookie, vpsUrl, vpsKey, random) {
     return new Promise((resolve) => {
-        const sign = refractSign("POST", ATTEND_URL, "", key);
-        $.post({
-            url: ATTEND_URL,
-            headers: {
-                "User-Agent": UA,
-                "refract-version": REFRACT_VERSION,
-                "refract-key": key,
-                "refract-sign": sign,
-                "content-type": "text/plain;charset=UTF-8",
-                "accept": "*/*",
-                "accept-language": "zh-CN,zh-Hans;q=0.9",
-                "accept-encoding": "gzip, deflate, br",
-                "sec-fetch-site": "same-origin",
-                "sec-fetch-mode": "cors",
-                "sec-fetch-dest": "empty",
-                "priority": "u=3, i",
-                "cookie": cookie,
-                "origin": "https://www.nodeseek.com",
-                "referer": "https://www.nodeseek.com/sw.js?v=" + REFRACT_VERSION,
-            },
-            body: "",
-        }, (err, resp, data) => {
-            if (err) { $.msg("NodeSeek", "❌ 签到请求失败", String(err)); return resolve(); }
+        const headers = {
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+        };
+        if (vpsKey) headers["x-api-key"] = vpsKey;
 
-            $.log("[INFO] attend status=" + resp.status);
-            $.log("[INFO] attend body=" + String(data).substring(0, 200));
+        $.post({
+            url: vpsUrl + "/attend",
+            headers: headers,
+            body: JSON.stringify({ cookie: cookie, random: random }),
+            timeout: 60,
+        }, (err, resp, data) => {
+            if (err) {
+                $.msg("NodeSeek", "❌ VPS 请求失败", String(err));
+                return resolve();
+            }
+
+            $.log("[INFO] VPS status=" + resp.status);
+            $.log("[INFO] VPS body=" + String(data).substring(0, 200));
 
             let result;
-            try { result = JSON.parse(atob(String(data))); } catch (e) {
-                try { result = JSON.parse(data); } catch (e2) {
-                    $.msg("NodeSeek", "❌ 响应解析失败", "status=" + resp.status + "\n" + String(data).substring(0, 100));
-                    return resolve();
-                }
+            try {
+                result = JSON.parse(data);
+            } catch (e) {
+                $.msg("NodeSeek", "❌ VPS 响应解析失败", "status=" + resp.status + "\n" + String(data).substring(0, 100));
+                return resolve();
             }
 
             if (result.success) {
                 $.msg("NodeSeek", "✅ 签到成功", result.message + "\n积分+" + result.gain + " 当前" + result.current);
             } else {
-                $.msg("NodeSeek", "❌ 签到失败", result.message || ("status=" + resp.status));
+                $.msg("NodeSeek", "❌ 签到失败", result.message || "未知错误");
             }
             resolve();
         });
     });
-}
-
-function refractSign(method, url, body, key) {
-    return sha1hex([method, url, UA, body, key].join("\n\n"));
-}
-
-function sha1hex(str) {
-    function rotl(n, s) { return (n << s) | (n >>> (32 - s)); }
-    function toHex(n) { return ("00000000" + (n >>> 0).toString(16)).slice(-8); }
-    const bytes = [];
-    for (let i = 0; i < str.length; i++) {
-        const c = str.charCodeAt(i);
-        if (c < 0x80) { bytes.push(c); }
-        else if (c < 0x800) { bytes.push(0xC0 | (c >> 6), 0x80 | (c & 0x3F)); }
-        else { bytes.push(0xE0 | (c >> 12), 0x80 | ((c >> 6) & 0x3F), 0x80 | (c & 0x3F)); }
-    }
-    const len = bytes.length;
-    const words = new Array(Math.ceil((len + 9) / 64) * 16).fill(0);
-    for (let i = 0; i < len; i++) words[i >> 2] |= bytes[i] << (24 - (i % 4) * 8);
-    words[len >> 2] |= 0x80 << (24 - (len % 4) * 8);
-    words[words.length - 1] = len * 8;
-    let h0 = 0x67452301, h1 = 0xEFCDAB89, h2 = 0x98BADCFE, h3 = 0x10325476, h4 = 0xC3D2E1F0;
-    for (let i = 0; i < words.length; i += 16) {
-        const w = words.slice(i, i + 16);
-        while (w.length < 80) {
-            w.push(rotl(w[w.length-16] ^ w[w.length-14] ^ w[w.length-8] ^ w[w.length-3], 1));
-        }
-        let a = h0, b = h1, c = h2, d = h3, e = h4;
-        for (let j = 0; j < 80; j++) {
-            let f, k;
-            if      (j < 20) { f = (b & c) | (~b & d);           k = 0x5A827999; }
-            else if (j < 40) { f = b ^ c ^ d;                    k = 0x6ED9EBA1; }
-            else if (j < 60) { f = (b & c) | (b & d) | (c & d); k = 0x8F1BBCDC; }
-            else             { f = b ^ c ^ d;                    k = 0xCA62C1D6; }
-            const t = (rotl(a, 5) + f + e + k + w[j]) & 0xFFFFFFFF;
-            e = d; d = c; c = rotl(b, 30); b = a; a = t;
-        }
-        h0 = (h0 + a) & 0xFFFFFFFF; h1 = (h1 + b) & 0xFFFFFFFF;
-        h2 = (h2 + c) & 0xFFFFFFFF; h3 = (h3 + d) & 0xFFFFFFFF;
-        h4 = (h4 + e) & 0xFFFFFFFF;
-    }
-    return [h0, h1, h2, h3, h4].map(toHex).join("");
 }
 
 function Env(s) {
