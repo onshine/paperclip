@@ -1,32 +1,35 @@
 /**
  * 百度网盘 · 每日签到,得金币 + 成长值,支持连签奖励
  *
- * 抓取:打开百度网盘 APP →「我的」→「签到」页面停留 1 秒,抓 Cookie
- * 签到:cron 定时自动签到(每日签到领奖)
+ * 抓取:打开百度网盘 APP →「我的」→「签到」页面停留 1 秒,自动抓 Cookie + 设备指纹(两条规则)
+ * 签到:cron 先用指纹刷新 ab_sr(2h 风控票据),再签到(每日签到领奖)
  *
  * @Author: MaYIHEI <https://github.com/MaYIHEI/paperclip>
  * @Channel: Telegram 频道 https://t.me/mayihei
- * @Updated: 2026-06-24
+ * @Updated: 2026-06-25
  *
  * ===== Loon =====
  * [MITM]
- * hostname = pan.baidu.com
+ * hostname = pan.baidu.com, miao.baidu.com
  * [Script]
  * http-request ^https:\/\/pan\.baidu\.com\/coins\/taskcenter\/signinlist tag=百度网盘 Cookie, script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/baidunetdisk/baidunetdisk.js, requires-body=false, img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/baidunetdisk.png
+ * http-request ^https:\/\/miao\.baidu\.com\/abdr tag=百度网盘 指纹, script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/baidunetdisk/baidunetdisk.js, requires-body=true, img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/baidunetdisk.png
  * cron "15 8 * * *" script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/baidunetdisk/baidunetdisk.js, tag=百度网盘签到, img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/baidunetdisk.png, enable=true
  *
  * ===== Surge =====
  * [MITM]
- * hostname = pan.baidu.com
+ * hostname = pan.baidu.com, miao.baidu.com
  * [Script]
  * 百度网盘 Cookie = type=http-request,pattern=^https:\/\/pan\.baidu\.com\/coins\/taskcenter\/signinlist,requires-body=false,max-size=0,script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/baidunetdisk/baidunetdisk.js,img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/baidunetdisk.png
+ * 百度网盘 指纹 = type=http-request,pattern=^https:\/\/miao\.baidu\.com\/abdr,requires-body=true,max-size=0,script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/baidunetdisk/baidunetdisk.js,img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/baidunetdisk.png
  * 百度网盘签到 = type=cron,cronexp=15 8 * * *,timeout=60,script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/baidunetdisk/baidunetdisk.js,img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/baidunetdisk.png
  *
  * ===== Quantumult X =====
  * [MITM]
- * hostname = pan.baidu.com
+ * hostname = pan.baidu.com, miao.baidu.com
  * [rewrite_local]
  * ^https:\/\/pan\.baidu\.com\/coins\/taskcenter\/signinlist url script-request-header https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/baidunetdisk/baidunetdisk.js
+ * ^https:\/\/miao\.baidu\.com\/abdr url script-request-body https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/baidunetdisk/baidunetdisk.js
  * [task_local]
  * 15 8 * * * https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/baidunetdisk/baidunetdisk.js, tag=百度网盘签到, img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/baidunetdisk.png, enabled=true
  *
@@ -39,11 +42,16 @@
  * http:
  *   mitm:
  *     - "pan.baidu.com"
+ *     - "miao.baidu.com"
  *   script:
  *     - match: ^https:\/\/pan\.baidu\.com\/coins\/taskcenter\/signinlist
  *       name: 百度网盘 Cookie
  *       type: request
  *       require-body: false
+ *     - match: ^https:\/\/miao\.baidu\.com\/abdr
+ *       name: 百度网盘 指纹
+ *       type: request
+ *       require-body: true
  * script-providers:
  *   百度网盘签到:
  *     url: https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/baidunetdisk/baidunetdisk.js
@@ -52,11 +60,14 @@
 
 const $ = new Env("百度网盘");
 
-const SCRIPT_VERSION = "2026-06-25.r4"; // 改一次 +1,确认拉到最新版
+const SCRIPT_VERSION = "2026-06-25.r5"; // 改一次 +1,确认拉到最新版
 $.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
 
-const CK_KEY = 'baidunetdisk_data';
-const BASE   = 'https://pan.baidu.com/coins/taskcenter';
+const CK_KEY   = 'baidunetdisk_data';
+const ABDR_KEY = 'baidunetdisk_abdr';   // 设备指纹(miao.baidu.com/abdr 的请求体),cron 用它换新 ab_sr
+const BASE     = 'https://pan.baidu.com/coins/taskcenter';
+// ab_sr(风控票据,2h TTL)由 abdr 端点下发,signin 写接口校验其新鲜度;cron 先重放指纹换新再签到
+const ABDR_URL = 'https://miao.baidu.com/abdr?_o=https%3A%2F%2Fpan.baidu.com';
 
 // 「每日签到领奖」任务:task_id 前缀按活动周期轮换,运行时从 tasklist 动态取(下面两个是稳定识别特征)
 // 识别:task_type==='166'(签到类),task_class_id 固定;DAILY_TASK_ID 仅作 tasklist 拿不到时的兜底
@@ -90,12 +101,15 @@ const FALLBACK_UA = 'Mozilla/5.0 (iPhone; CPU iPhone OS like Mac OS X) ' +
 
 // ─── 入口 ────────────────────────────────────────────────────────────────────
 if (typeof $request !== "undefined") {
-    getCookie();
+    // 两条抓取规则共用本脚本:abdr 抓设备指纹,signinlist 抓 Cookie
+    if (/miao\.baidu\.com\/abdr/.test($request.url)) captureAbdr();
+    else getCookie();
     $.done();
 } else {
     (async () => {
         if (JSON.parse($.getdata("baidunetdisk_clear") || "false")) {
             $.setdata("", CK_KEY);
+            $.setdata("", ABDR_KEY);
             $.setdata("false", "baidunetdisk_clear");
             $.msg($.name, "", "✅ Cookie 已清除，请重新抓取");
             return $.done();
@@ -138,6 +152,19 @@ function getCookie() {
         `BDUSS: ${uid}…\ncuid: ${maskToken(dev.cuid)}`);
 }
 
+// ─── 抓设备指纹 ───────────────────────────────────────────────────────────────
+// 触发条件: 打开签到页时风控 JS 会 POST miao.baidu.com/abdr 上报指纹,抓它的请求体
+// cron 时重放这个指纹换新 ab_sr(详见 main:刷新 ab_sr 段)
+function captureAbdr() {
+    const body = $request.body || '';
+    if (!body || body.length < 100) {   // 指纹体约 3~4KB,太短说明没抓到
+        debug('abdr 请求体为空,跳过');
+        return;
+    }
+    $.setdata(body, ABDR_KEY);
+    $.msg($.name, '✅ 百度网盘 指纹已抓', '已存设备指纹,cron 将用它刷新 ab_sr');
+}
+
 // ─── 签到主逻辑 ──────────────────────────────────────────────────────────────
 async function main() {
     const raw = $.getdata(CK_KEY);
@@ -157,6 +184,21 @@ async function main() {
     if (!ck.cookie || !ck.dev) {
         $.msg($.name, '🚫 Cookie 不完整', '请重新打开签到页抓取');
         return;
+    }
+
+    // 0. 刷新 ab_sr:存的那个只活 2h、cron 时早过期,signin 写接口会拒(errno 9230)
+    //    用抓到的设备指纹重放 abdr 端点换一个新鲜 ab_sr,拼回 Cookie
+    const abdr = $.getdata(ABDR_KEY);
+    if (abdr) {
+        const fresh = await refreshAbsr(ck, abdr);
+        if (fresh) {
+            ck.cookie = replaceAbsr(ck.cookie, fresh);
+            debug('ab_sr 已刷新: ' + maskToken(fresh));
+        } else {
+            debug('ab_sr 刷新失败,沿用旧值(signin 可能 9230)');
+        }
+    } else {
+        debug('未存设备指纹,跳过 ab_sr 刷新(signin 可能 9230)');
     }
 
     // 1. 取当前签到任务 task_id(前缀按周期轮换,必须现取;失败兜底用常量)
@@ -273,6 +315,46 @@ function queryMember(ck) {
             catch (e) { debug(`[member] 解析失败: ${String(data).slice(0, 200)}`); resolve(null); }
         });
     });
+}
+
+// ─── 用设备指纹重放 abdr,换一个新鲜 ab_sr ────────────────────────────────────
+function refreshAbsr(ck, abdrBody) {
+    return new Promise((resolve) => {
+        const opts = {
+            url: ABDR_URL,
+            headers: {
+                'Host':            'miao.baidu.com',
+                'Content-Type':    'text/plain;charset=UTF-8',
+                'Accept':          '*/*',
+                'Accept-Language': 'zh-CN,zh-Hans;q=0.9',
+                'Origin':          'https://pan.baidu.com',
+                'Referer':         'https://pan.baidu.com/',
+                'User-Agent':      ck.ua || FALLBACK_UA,
+                'Cookie':          ck.cookie,
+            },
+            body: abdrBody,
+            timeout: 10000,
+        };
+        $.post(opts, (err, resp, data) => {
+            if (err) { debug('abdr 错误: ' + JSON.stringify(err)); resolve(null); return; }
+            const m = /ab_sr=([^;,\s]+)/.exec(setCookieOf(resp));
+            resolve(m ? m[1] : null);
+        });
+    });
+}
+
+// 把 Cookie 里的 ab_sr 换成新值(没有就追加)
+function replaceAbsr(cookie, fresh) {
+    if (/(^|;\s*)ab_sr=/.test(cookie)) return cookie.replace(/ab_sr=[^;]*/, 'ab_sr=' + fresh);
+    return cookie + '; ab_sr=' + fresh;
+}
+
+// 从响应头里拼出所有 Set-Cookie(大小写不敏感,兼容合并/分散两种)
+function setCookieOf(resp) {
+    const h = (resp && resp.headers) || {};
+    let out = '';
+    for (const k in h) if (/^set-cookie$/i.test(k)) out += ';' + h[k];
+    return out;
 }
 
 // ─── 调一次 taskcenter 接口 ──────────────────────────────────────────────────
