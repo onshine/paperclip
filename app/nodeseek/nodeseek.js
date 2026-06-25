@@ -52,7 +52,7 @@
 
 const $ = new Env("NodeSeek");
 
-const SCRIPT_VERSION = "2026-06-25.r7";
+const SCRIPT_VERSION = "2026-06-25.r8";
 $.log("[INFO] 脚本版本 " + SCRIPT_VERSION);
 
 const CK_KEY     = "nodeseek_cookie";
@@ -77,7 +77,8 @@ const REFRACT_KEY_DEFAULT = "CHICZkKViFoZmVbIH1Y6"; // from sw.js: this.refractK
     const UA     = $.getdata(UA_KEY) || UA_FALLBACK;
     const random = ($.getdata(RANDOM_KEY) || "false") === "true";
 
-    $.log("[INFO] cookie has cf_clearance=" + cookie.includes("cf_clearance") + " len=" + cookie.length);
+    const cookieKeys = cookie.split(";").map(c => c.trim().split("=")[0]).join(", ");
+    $.log("[INFO] cookie keys=" + cookieKeys);
     $.log("[INFO] ua=" + UA.substring(0, 60));
 
     try {
@@ -100,6 +101,12 @@ function ping(cookie, UA) {
             headers: {
                 "Cookie": cookie,
                 "User-Agent": UA,
+                "Accept": "*/*",
+                "Accept-Language": "zh-CN,zh;q=0.9",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Sec-Fetch-Site": "same-origin",
+                "Sec-Fetch-Mode": "cors",
+                "Sec-Fetch-Dest": "empty",
                 "refract-sign": sign,
                 "refract-version": REFRACT_VERSION,
                 "refract-key": REFRACT_KEY_DEFAULT,
@@ -128,6 +135,11 @@ function attend(cookie, refractKey, random, UA) {
                 "Origin": "https://www.nodeseek.com",
                 "Referer": "https://www.nodeseek.com/",
                 "Accept": "*/*",
+                "Accept-Language": "zh-CN,zh;q=0.9",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Sec-Fetch-Site": "same-origin",
+                "Sec-Fetch-Mode": "cors",
+                "Sec-Fetch-Dest": "empty",
                 "refract-sign": sign,
                 "refract-version": REFRACT_VERSION,
                 "refract-key": refractKey,
