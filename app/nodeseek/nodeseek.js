@@ -76,8 +76,8 @@ const REFRACT_KEY_DEFAULT = "CHICZkKViFoZmVbIH1Y6"; // from sw.js: this.refractK
     const random = ($.getdata(RANDOM_KEY) || "false") === "true";
 
     try {
-        const refractKey = await ping(cookie);
-        await attend(cookie, refractKey, random);
+        // Try with default key first; if server rejects, it will supply updated key in response header
+        await attend(cookie, REFRACT_KEY_DEFAULT, random);
     } catch (e) {
         $.msg("NodeSeek", "❌ 签到异常", String(e));
     }
@@ -120,6 +120,9 @@ function attend(cookie, refractKey, random) {
                 "Cookie": cookie,
                 "User-Agent": UA,
                 "Content-Type": "text/plain;charset=UTF-8",
+                "Origin": "https://www.nodeseek.com",
+                "Referer": "https://www.nodeseek.com/",
+                "Accept": "*/*",
                 "refract-sign": sign,
                 "refract-version": REFRACT_VERSION,
                 "refract-key": refractKey,
