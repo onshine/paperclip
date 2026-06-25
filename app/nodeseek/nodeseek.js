@@ -76,8 +76,8 @@ const REFRACT_KEY_DEFAULT = "CHICZkKViFoZmVbIH1Y6"; // from sw.js: this.refractK
     const random = ($.getdata(RANDOM_KEY) || "false") === "true";
 
     try {
-        // Try with default key first; if server rejects, it will supply updated key in response header
-        await attend(cookie, REFRACT_KEY_DEFAULT, random);
+        const refractKey = await ping(cookie);
+        await attend(cookie, refractKey, random);
     } catch (e) {
         $.msg("NodeSeek", "❌ 签到异常", String(e));
     }
