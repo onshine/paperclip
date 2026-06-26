@@ -6,7 +6,7 @@
  *
  * @Author: MaYIHEI <https://github.com/MaYIHEI/paperclip>
  * @Channel: Telegram 频道 https://t.me/mayihei
- * @Updated: 2026-06-24
+ * @Updated: 2026-06-26
  *
  * ===== Loon =====
  * [MITM]
@@ -52,7 +52,7 @@
 
 const $ = new Env("WPS");
 
-const SCRIPT_VERSION = "2026-06-24.r2"; // 改一次 +1,确认拉到最新版
+const SCRIPT_VERSION = "2026-06-26.r1"; // 改一次 +1,确认拉到最新版
 $.log(`[INFO] 脚本版本 ${SCRIPT_VERSION}`);
 
 const CK_KEY = "wps_sid";
@@ -80,6 +80,7 @@ const PAGE_INFO = "https://personal-act.wps.cn/activity-rubik/activity/page_info
 // 小程序每日打卡(独立活动,与上面福利中心 H5 不同):info 取动态密钥 s_key,CONF 取动态盐 ss,clock_in 执行
 const CLOCK_INFO = "https://personal-bus.wps.cn/activity/clock_in/v1/info";
 const CLOCK_IN = "https://personal-bus.wps.cn/activity/clock_in/v1/clock_in";
+const CLOCK_REWARD = "https://personal-bus.wps.cn/activity/clock_in/v1/reward"; // 领取昨日打卡奖励(同套 Signature)
 const CLOCK_CONF = "https://personal-act.wpscdn.cn/srcapi/act/rubik-service/honeycomb-adapter/client/module-info?pid=113&mg_id=47736&id=48312";
 
 // ===== 福利中心活动「WPS618 天天领福利」的组件标识(活动换期需更新) =====
@@ -599,9 +600,41 @@ async function taskClockIn() {
             $.results.push(`${st.e} ${tag}:${st.t}`);
             if (st.e !== "✅") debug(`${tag} 响应: ${r.body.slice(0, 300)}`);
         }
+
+        // 领取昨日打卡奖励(奖励次日开放、隔天作废)。与打卡无关,不论今天签没签都尝试领。
+        await claimClockInRewards(infBody, sid, s_key, ss);
     } catch (e) {
         $.results.push(`❌ ${tag}:异常`);
         $.log(`[ERROR] ${tag}: ${e}`);
+    }
+}
+
+// 领取昨日打卡奖励:reward_list 里 reward_status==1 的(1=可领取/昨日签到今日开放)逐个 POST。
+// 复用打卡同一套 Signature(s_key+MD5(body)+Date 用 ss 做 HMAC);body 带 reward_id + clock_in_time。
+// 奖励是 PDF/图片/AI 体验等 1 天权益,不领次日作废;真正发放靠这一个接口,不需要微信授权 code。
+async function claimClockInRewards(infBody, sid, s_key, ss) {
+    try {
+        const list = (((safeJson(infBody) || {}).data || {}).reward_list || {}).list || [];
+        const pend = list.filter((rw) => rw && rw.reward_status === 1);
+        if (!pend.length) return;
+
+        const got = [], fail = [];
+        for (const rw of pend) {
+            const body = canonicalJSON({ client_type: 1, reward_id: rw.reward_id, clock_in_time: rw.clock_in_time });
+            const date = new Date().toUTCString();
+            const signature = hmacSha256Hex(s_key + md5Hex(body) + date, ss);
+            const r = await rawReq("POST", CLOCK_REWARD, { sid, body, date, signature });
+            const j = safeJson(r.body);
+            const name = rw.sku_name || rw.mb_name || "奖励";
+            // 成功响应 data.reward_status===true
+            if (j && j.result === "ok" && (j.data || {}).reward_status === true) got.push(name);
+            else { fail.push(name); debug(`领奖 ${name}(${rw.reward_id}) 失败: ${(r.body || "").slice(0, 200)}`); }
+            await sleep(jitter(ACTION_GAP)); // 多个奖励之间留间隔
+        }
+        if (got.length) $.results.push(`✅ 领昨日奖励:${got.join("、")}`);
+        if (fail.length) $.results.push(`⚠️ 待领奖励未领成功(可去小程序手动领):${fail.join("、")}`);
+    } catch (e) {
+        $.log(`[ERROR] 领昨日奖励: ${e}`);
     }
 }
 
