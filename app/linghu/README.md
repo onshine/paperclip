@@ -2,7 +2,7 @@
   <img src="https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/linghu.png" width="80" alt="灵狐灵购" />
 </p>
 
-# 灵狐灵购 🧪
+# 灵狐灵购
 
 灵狐灵购 APP 每日签到领红包,支持连签奖励。
 

@@ -2,7 +2,7 @@
   <img src="https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/dreame.png" width="80" alt="追觅" />
 </p>
 
-# 追觅 🧪
+# 追觅
 
 追觅商城每日签到,得积分 / 成长值,支持连签奖励。
 
