@@ -4,9 +4,9 @@
 
 # 腾讯视频
 
-> ✅ **维护中** · 从归档复活,**实测成功**(`✅ 签到成功,获得 10 V力值`):cron 先用 `refresh_token` 走 `Account/Refresh` 换新 vusession(免 qimei、免签名),再调 `CheckIn` 签到。**无人值守**
+> ✅ **维护中** · 从归档复活,实测稳定,**无人值守**
 
-腾讯视频 VIP 每日签到(V力值)。签到接口 `CheckIn` 无签名、纯靠有效 vusession;而 vusession 仅 2 小时,旧版靠用户手动开 app 续命。新版用 `refresh_token`(长期、cookie 里)走 `pbaccess.video.qq.com/.../Account/Refresh` 每次现刷 vusession,实现无人值守。
+腾讯视频 VIP 每日签到,自动领取 V力值。Cookie 抓取一次后,cron 会自动续期并签到,无需每天手动开 app。
 
 ## 文件
 
@@ -19,9 +19,9 @@
    - **iOS 微信打开「腾讯视频」小程序**,随便点几下 → 触发 `pbaccess.video.qq.com` 请求(带 cookie)
    - 或 iOS Safari 登录 `v.qq.com`(请求桌面网站)→ 切后台再切回
 3. 收到 `✅ 腾讯视频 Cookie 获取成功` 通知即成功
-4. cron 自动签到(每次先 `Account/Refresh` 换新 vusession,再 `CheckIn`)
+4. cron 会按计划自动续期并签到
 
-> 调试:脚本首行打印版本号;`tenvideo_debug=true` 开详细日志;日志前缀 `[capture]`/`[刷新]`/`[检测]`/`[响应]`。
+> 调试:脚本首行打印版本号;`tenvideo_debug=true` 开详细日志。
 
 ## Loon
 
@@ -95,10 +95,10 @@ script-providers:
 
 ## 已知限制
 
-- **refresh_token 滚动,勿在周期内正常用腾讯视频**:每次刷新换新 refresh_token(脚本自动写回);你平时用 app/小程序/网页时它也会滚,可能把脚本存的滚旧失效 → cron 报"刷新失败"时,**iOS 微信开下「腾讯视频」小程序即可重抓**。隔天是否失效(有无宽限期)待观察
-- **refresh_token 长期但非永久**:网页 cookie 标注有效期约 1 年,长期未跑/被吊销后需重抓
+- **Cookie 会滚动,尽量别在周期内频繁用腾讯视频**:你平时用 app/小程序/网页时,脚本存的 Cookie 可能被顶失效 → cron 报"刷新失败"时,**iOS 微信开下「腾讯视频」小程序即可重抓**
+- **Cookie 长期但非永久**:长期未跑/被吊销后需重抓
 - **奖励仅 V力值**,无实物兑换
 
 ## 致谢
 
-- 原作者:[@WowYiJiu](https://github.com/WowYiJiu) — 初版签到逻辑与 CheckIn 接口
+- 原作者:[@WowYiJiu](https://github.com/WowYiJiu) — 初版签到逻辑

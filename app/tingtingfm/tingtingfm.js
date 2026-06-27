@@ -2,7 +2,7 @@
  * 听听FM · 听听FM APP「任务中心」每日签到，领成长值 + 金币
  *
  * 抓取:打开听听FM APP →「我的」→「任务中心」，停留 1 秒触发 /sns/app 抓 Cookie
- * 签到:cron 用抓到的会话密钥换 token，再调每日签到任务(task=2)
+ * 签到:cron 用抓到的 Cookie 自动签到
  *
  * @Author: MaYIHEI <https://github.com/MaYIHEI/paperclip>
  * @Channel: Telegram 频道 https://t.me/mayihei

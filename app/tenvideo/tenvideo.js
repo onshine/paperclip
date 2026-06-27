@@ -1,8 +1,8 @@
 /**
  * 腾讯视频 · VIP 每日签到(V力值)
  *
- * 抓取:微信开「腾讯视频」小程序(或 Safari 登录 v.qq.com),抓 cookie(含 refresh_token)
- * 签到:cron 先 Account/Refresh 换新 vusession,再 CheckIn(细节见 README)
+ * 抓取:微信开「腾讯视频」小程序(或 Safari 登录 v.qq.com),抓 cookie
+ * 签到:cron 自动续期后签到
  *
  * @Author: @WowYiJiu
  * @Modifier: MaYIHEI <https://github.com/MaYIHEI/paperclip>

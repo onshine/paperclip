@@ -1,8 +1,8 @@
 /**
  * 龙湖天街 App · 龙珠 H5「日日签」每日签到 + 幸运抽奖,签到得成长值/珑珠,抽奖随机珑珠(含大奖)
  *
- * 抓取:龙湖天街 App →「会员 / 日日签」点签到一次,抓 L0 通道鉴权头(usertoken + 顶象 dxrisk-token)
- * 签到:cron 先签到(clock),再领抽奖次数(lottery/sign)并抽到次数耗尽(lottery/click);支持随机时间(细节见 README)
+ * 抓取:龙湖天街 App →「会员 / 日日签」点签到一次,抓 Cookie
+ * 签到:cron 定时自动签到,并自动抽奖到次数耗尽;支持随机时间(细节见 README)
  *
  * @Author: MaYIHEI <https://github.com/MaYIHEI/paperclip>
  * @Channel: Telegram 频道 https://t.me/mayihei

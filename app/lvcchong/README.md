@@ -120,5 +120,5 @@ script-providers:
 - **跨天续命未验证**:只实测了 refreshToken 过期 52 分钟仍可用,cron 一天一跑需要 ≥24 小时宽限。若隔天失效,把 cron 改成**每几小时跑一次**保温(refreshToken 滚动,刷一次就续命)
 - **`refreshToken` 滚动**:脚本和 App 不能同时滚同一家族的 token。抓完 Cookie 后尽量别再开 App 积分页,否则可能把脚本存的滚作废 → 需重抓
 - **`deviceId` 绑定**:`refresh` 校验设备指纹,脚本用抓包时那台的 `deviceId`,换设备可能触发风控
-- **只做基础签到**:「看视频多领积分」(`receiveTaskScore`)带加密 `nonce`+`content` 且依赖腾讯激励视频广告观看回执,脚本不做
+- **只做基础签到**:「看视频多领积分」依赖观看腾讯激励视频广告回执,脚本不做
 - 失效时脚本提示「重抓 Cookie」,按使用步骤重抓即可

@@ -8,8 +8,8 @@
 
 ## 文件
 
-- `camscanner.js` — cron 签到主体:查今日剩余次数 → 逐次获取 lottery_code(原生签名接口)→ 抽奖领奖
-- `camscanner.cookie.js` — 重写抓 Cookie:监听 `get_user_attribute`,增量抓取 token / cs_ept_d / client_id
+- `camscanner.js` — cron 签到主体:按今日剩余次数逐次抽奖领奖
+- `camscanner.cookie.js` — 重写抓 Cookie
 
 ## 使用步骤
 

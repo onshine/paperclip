@@ -1,9 +1,8 @@
 /**
  * QQ 音乐 · 绿钻成长值每日签到(QQ 音乐 App「我的-会员-每日签到」)
  *
- * 抓取:打开 QQ 音乐 →「我的 / 会员 / 每日签到」进签到页,抓 uin + qm_keyst + refresh_key
- * 签到:cron 先用 refresh_key 续 qm_keyst(musickey 仅 3 天有效,refresh_key 长期不变),
- *       再走小程序免签名通道(musicu.fcg + comm.authst)签到,无需私有 sign。挂着代理永不用再开 App
+ * 抓取:打开 QQ 音乐 →「我的 / 会员 / 每日签到」进签到页,抓 Cookie
+ * 签到:cron 自动续期后签到,挂着代理永不用再开 App
  *
  * @Author: MaYIHEI <https://github.com/MaYIHEI/paperclip>
  * @Channel: Telegram 频道 https://t.me/mayihei
