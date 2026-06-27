@@ -6,7 +6,7 @@
  *
  * @Author: MaYIHEI <https://github.com/MaYIHEI/paperclip>
  * @Channel: Telegram 频道 https://t.me/mayihei
- * @Updated: 2026-05-23
+ * @Updated: 2026-06-27
  */
 
 const $ = new Env("米游社 [Cookie]");
@@ -61,14 +61,24 @@ const KEY_WEB_HEADERS     = 'mhy_web_headers';
     }
 
     // 抓取 2: web 签到 cookie + headers
+    // 米哈游已不再把 cookie_token 放进「请求 Cookie」,改为在 luna 接口的「响应 Set-Cookie」里下发,
+    // 所以这里从 $response 的 Set-Cookie 抠 cookie_token_v2 + account_mid_v2 + account_id_v2 拼成 web cookie。
     if (/api-takumi\.mihoyo\.com\/event\/luna\/[a-z0-9]+\/(info|home|sign)/.test(url)) {
         try {
-            if (!/cookie_token/.test(cookie)) {
-                $.log('[WARN] 没有 cookie_token,跳过'); $.done(); return;
+            const setCookie = readSetCookie($response && $response.headers);
+            const want = ['cookie_token_v2', 'account_mid_v2', 'account_id_v2'];
+            const parts = [];
+            for (const name of want) {
+                const m = setCookie.match(new RegExp(name + '=([^;]+)'));
+                if (m) parts.push(name + '=' + m[1].trim());
             }
-            $.setdata(cookie, KEY_WEB_COOKIE);
-            $.setdata(JSON.stringify(headers), KEY_WEB_HEADERS);
-            $.log(`[INFO] web cookie 已存: ${cookie.length}字符 headers ${Object.keys(headers).length}个`);
+            if (parts.length < want.length) {
+                $.log(`[WARN] Set-Cookie 缺字段,只拿到 ${parts.length}/${want.length},跳过(进游戏签到页等几秒再试)`);
+                $.done(); return;
+            }
+            $.setdata(parts.join('; '), KEY_WEB_COOKIE);
+            $.setdata(JSON.stringify(headers), KEY_WEB_HEADERS);  // header 模板(DS / x-rpc-* / UA)仍从请求头取
+            $.log(`[INFO] web cookie 已存: ${parts.length}字段 headers ${Object.keys(headers).length}个`);
             notify();
         } catch (e) { $.log('[ERROR] web cookie: ' + e); }
         $.done(); return;
@@ -76,6 +86,19 @@ const KEY_WEB_HEADERS     = 'mhy_web_headers';
 
     $.done();
 })();
+
+// Set-Cookie 在不同核心里 header 名大小写不定、值可能是字符串或数组,统一拼成一段字符串
+function readSetCookie(respHeaders) {
+    if (!respHeaders) return '';
+    let out = '';
+    for (const k in respHeaders) {
+        if (k.toLowerCase() === 'set-cookie') {
+            const v = respHeaders[k];
+            out += (Array.isArray(v) ? v.join('; ') : v) + '; ';
+        }
+    }
+    return out;
+}
 
 function notify() {
     const has1 = !!$.getdata(KEY_GAME_ROLES);

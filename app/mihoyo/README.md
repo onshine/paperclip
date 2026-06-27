@@ -22,10 +22,10 @@
 
 ```ini
 [MITM]
-hostname = bbs-api.miyoushe.com, api-takumi.mihoyo.com
+hostname = api-takumi.miyoushe.com, api-takumi.mihoyo.com
 
 [Script]
-http-response ^https:\/\/bbs-api\.miyoushe\.com\/(apihub|user|misc)\/ tag=米游社 Cookie, script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/mihoyo/mihoyo.cookie.js, requires-body=true, img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/mihoyo.png
+http-response ^https:\/\/api-takumi\.(miyoushe|mihoyo)\.com\/(binding\/api\/getUserGameRolesByStoken|event\/luna\/) tag=米游社 Cookie, script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/mihoyo/mihoyo.cookie.js, requires-body=true, img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/mihoyo.png
 
 cron "13 6 * * *" script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/mihoyo/mihoyo.js, tag=米游社签到, img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/mihoyo.png, enable=true
 ```
@@ -34,10 +34,10 @@ cron "13 6 * * *" script-path=https://raw.githubusercontent.com/MaYIHEI/papercli
 
 ```ini
 [MITM]
-hostname = bbs-api.miyoushe.com, api-takumi.mihoyo.com
+hostname = api-takumi.miyoushe.com, api-takumi.mihoyo.com
 
 [Script]
-米游社 Cookie = type=http-response,pattern=^https:\/\/bbs-api\.miyoushe\.com\/(apihub|user|misc)\/,requires-body=true,max-size=0,script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/mihoyo/mihoyo.cookie.js,img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/mihoyo.png
+米游社 Cookie = type=http-response,pattern=^https:\/\/api-takumi\.(miyoushe|mihoyo)\.com\/(binding\/api\/getUserGameRolesByStoken|event\/luna\/),requires-body=true,max-size=0,script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/mihoyo/mihoyo.cookie.js,img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/mihoyo.png
 
 米游社签到 = type=cron,cronexp=13 6 * * *,timeout=60,script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/mihoyo/mihoyo.js,img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/mihoyo.png
 ```
@@ -46,10 +46,10 @@ hostname = bbs-api.miyoushe.com, api-takumi.mihoyo.com
 
 ```ini
 [MITM]
-hostname = bbs-api.miyoushe.com, api-takumi.mihoyo.com
+hostname = api-takumi.miyoushe.com, api-takumi.mihoyo.com
 
 [rewrite_local]
-^https:\/\/bbs-api\.miyoushe\.com\/(apihub|user|misc)\/ url script-response-body https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/mihoyo/mihoyo.cookie.js
+^https:\/\/api-takumi\.(miyoushe|mihoyo)\.com\/(binding\/api\/getUserGameRolesByStoken|event\/luna\/) url script-response-body https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/mihoyo/mihoyo.cookie.js
 
 [task_local]
 13 6 * * * https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/app/mihoyo/mihoyo.js, tag=米游社签到, img-url=https://raw.githubusercontent.com/MaYIHEI/pin/refs/heads/main/app/mihoyo.png, enabled=true
@@ -66,10 +66,10 @@ cron:
 
 http:
   mitm:
-    - "bbs-api.miyoushe.com"
+    - "api-takumi.miyoushe.com"
     - "api-takumi.mihoyo.com"
   script:
-    - match: ^https:\/\/bbs-api\.miyoushe\.com\/(apihub|user|misc)\/
+    - match: ^https:\/\/api-takumi\.(miyoushe|mihoyo)\.com\/(binding\/api\/getUserGameRolesByStoken|event\/luna\/)
       name: 米游社 Cookie
       type: response
       require-body: true
