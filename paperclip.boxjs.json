@@ -963,48 +963,6 @@
       ]
     },
     {
-      "id": "paperclip.teld",
-      "name": "特来电",
-      "keys": [
-        "teld_auth",
-        "teld_clear",
-        "teld_debug"
-      ],
-      "settings": [
-        {
-          "id": "teld_clear",
-          "name": "清除 Cookie",
-          "val": false,
-          "type": "boolean",
-          "desc": "设为开启后，运行一次签到脚本会清空已抓的 Cookie，完成后自动复位为关闭；之后重新抓取"
-        },
-        {
-          "id": "teld_debug",
-          "name": "调试模式",
-          "val": "false",
-          "type": "selects",
-          "items": [
-            {
-              "key": "false",
-              "label": "关闭"
-            },
-            {
-              "key": "true",
-              "label": "开启"
-            }
-          ],
-          "desc": "开启后打印抓取/续期/请求参数/响应日志"
-        }
-      ],
-      "author": "@MaYIHEI",
-      "repo": "https://github.com/MaYIHEI/paperclip/tree/main/miniprogram/teld",
-      "script": "https://raw.githubusercontent.com/MaYIHEI/paperclip/main/miniprogram/teld/teld.js",
-      "icons": [
-        "https://raw.githubusercontent.com/MaYIHEI/pin/main/app/teld.png",
-        "https://raw.githubusercontent.com/MaYIHEI/pin/main/app/teld.png"
-      ]
-    },
-    {
       "id": "paperclip.lvcchong",
       "name": "驴充充 (已归档)",
       "keys": [
