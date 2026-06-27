@@ -95,6 +95,7 @@ script-providers:
 | - | 业务参考 [@kayanouriko](https://github.com/kayanouriko) / [@daye99](https://github.com/daye99) / [@Womsxd](https://github.com/Womsxd) |
 | 2026-05 | 米哈游官方下线米游币任务,删除浏览/点赞/分享代码,只保留每日签到 |
 | 2026-05-24 | tag 统一为 `米游社 Cookie` / `米游社签到`,加 img-url 图标 |
+| 2026-06-27 | 修复米游社改版后 Cookie 抓不到的问题;更新重写规则,请删掉旧规则换成本页新配置,再按抓取步骤重抓一次 |
 
 ## 已知限制
 
