@@ -68,7 +68,9 @@ function handleResult() {
     }
 
     const state = classifyResult(result);
-    if (state === "already") {
+    if (state === "empty") {
+        $.msg("NodeSeek", "ℹ️ 无新签到结果", "NodeSeek 返回空对象，未获得鸡腿变化字段");
+    } else if (state === "already") {
         $.msg("NodeSeek", "ℹ️ 今日已签到", result.message || "");
     } else if (state === "failed") {
         $.msg("NodeSeek", "❌ 签到失败", result.message || "未知错误");
@@ -80,7 +82,7 @@ function handleResult() {
 }
 
 function classifyResult(result) {
-    if (result && typeof result === "object" && Object.keys(result).length === 0) return "already";
+    if (result && typeof result === "object" && Object.keys(result).length === 0) return "empty";
     const msg = String((result && result.message) || "");
     if (/已签到|重复|already|duplicate|repeat/i.test(msg)) return "already";
     if (result && result.success === false) return "failed";

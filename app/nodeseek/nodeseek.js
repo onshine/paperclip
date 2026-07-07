@@ -159,7 +159,9 @@ function attend(cookie, UA, random, relayUrl, relayKey, DEBUG) {
                 $.log("[DEBUG] parsed keys=" + Object.keys(result || {}).join(","));
                 $.log("[DEBUG] classify=" + state + " success=" + result.success + " status=" + result.status + " gain=" + result.gain + " current=" + result.current + " message=" + (result.message || ""));
             }
-            if (state === "already") {
+            if (state === "empty") {
+                $.msg("NodeSeek", "ℹ️ 无新签到结果", "NodeSeek 返回空对象，未获得鸡腿变化字段");
+            } else if (state === "already") {
                 $.msg("NodeSeek", "ℹ️ 今日已签到", result.message || "");
             } else if (state === "failed") {
                 $.msg("NodeSeek", "❌ 签到失败", result.message || "未知错误");
@@ -184,7 +186,7 @@ function maskRelayUrl(raw) {
 }
 
 function classifyResult(result) {
-    if (result && typeof result === "object" && Object.keys(result).length === 0) return "already";
+    if (result && typeof result === "object" && Object.keys(result).length === 0) return "empty";
     const msg = String((result && result.message) || "");
     if (/已签到|重复|already|duplicate|repeat/i.test(msg)) return "already";
     if (result && result.success === false) return "failed";
