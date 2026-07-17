@@ -11,7 +11,7 @@
 
 1. 在 Loon 中导入插件：
 
-   `https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/testing/loon/nodecheck/nodecheck.lpx`
+   `https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/loon/nodecheck/nodecheck.lpx`
 
 2. 进入节点或策略组页面，对目标节点运行「节点阻断检测」
 3. 等待检测结果弹窗
@@ -22,7 +22,7 @@
 
 ```ini
 [Script]
-generic script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/testing/loon/nodecheck/nodecheck.js, tag=节点阻断检测, timeout=20, img-url=bolt.horizontal.icloud.fill.system, enable=true
+generic script-path=https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/loon/nodecheck/nodecheck.js, tag=节点阻断检测, timeout=20, img-url=bolt.horizontal.icloud.fill.system, enable=true
 ```
 
 ## 维护记录

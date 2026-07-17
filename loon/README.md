@@ -13,7 +13,7 @@ Loon 专用插件文件,后缀 `.lpx`(Loon Plugin Extension,旧称 `.plugin`,内
 
 **导入地址**:`https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/loon/paperclip-cookie.lpx`
 
-节点阻断检测（testing）:`https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/testing/loon/nodecheck/nodecheck.lpx`
+节点阻断检测:`https://raw.githubusercontent.com/MaYIHEI/paperclip/refs/heads/main/loon/nodecheck/nodecheck.lpx`
 
 ---
 
